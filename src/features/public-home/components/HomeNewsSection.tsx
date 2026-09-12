@@ -11,7 +11,7 @@ export function HomeNewsSection({ news }: HomeNewsSectionProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-semibold text-brand-700">News & Announcements</p>
+            <p className="text-sm font-semibold text-brand-700">{'News & Announcements'}</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-normal text-slate-950">ข่าวประชาสัมพันธ์ล่าสุด</h2>
           </div>
           <button

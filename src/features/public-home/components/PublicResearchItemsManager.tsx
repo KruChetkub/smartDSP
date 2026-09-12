@@ -31,7 +31,7 @@ type FormState = {
   title: string;
   researcherNames: string;
   organization: string;
-  abstract: string;
+  'abstract': string;
   pdfUrl: string;
   coverImageUrl: string;
   coverImageLayout: SiteContentPlanCoverLayout;

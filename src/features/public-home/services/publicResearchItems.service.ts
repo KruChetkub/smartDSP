@@ -16,7 +16,7 @@ export type PublicResearchItem = {
   title: string;
   researcherNames: string;
   organization: string;
-  abstract: string;
+  'abstract': string;
   color: string;
   actionLabel: string;
   pdfUrl: string;
@@ -50,7 +50,7 @@ type ResearchRow = {
   title: string;
   researcher_names: string;
   organization: string;
-  abstract: string;
+  'abstract': string;
   color: string;
   action_label: string;
   pdf_url: string;

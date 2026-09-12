@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRight, BookOpen, BookOpenText, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, Coins, Database, ExternalLink, FileText, GraduationCap, Headphones, KeyRound, LogOut, Megaphone, Monitor, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -389,7 +389,7 @@ export function PortalPage() {
                 </div>
               </div>
               <Link
-                to="/settings?tab=security&mfa=required"
+                to={'/settings?tab=security&mfa=required'}
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-800"
               >
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />

@@ -168,7 +168,7 @@ export function AppLayout() {
             </div>
             <div className={cn(isSidebarCollapsed && 'sr-only')}>
               <div className="text-xl font-bold text-brand-700">PTDMS</div>
-              <div className="mt-1 text-sm text-slate-500">Training & Development</div>
+              <div className="mt-1 text-sm text-slate-500">{'Training & Development'}</div>
             </div>
           </div>
 
