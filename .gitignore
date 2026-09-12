@@ -29,3 +29,4 @@ supabase/.branches/
 supabase/.env
 supabase/.env.local
 supabase/.env.*.local
+docs/
