@@ -1,5 +1,6 @@
 import { defaultSiteContent } from '../data/siteContent.defaults';
 import type { SiteContentFaqItem, SiteContentPlanCard, SiteContentState } from '../types/siteContent.types';
+import { normalizeImageUrlInput } from '../../../utils/inputSecurity';
 
 const SITE_CONTENT_STORAGE_KEY = 'ptdms.siteContent.v1';
 export const SITE_CONTENT_UPDATED_EVENT = 'ptdms-site-content-updated';
@@ -25,7 +26,7 @@ function normalizePlanCards(cards: SiteContentPlanCard[] | undefined, fallbackCa
       color: card.color || fallbackCard.color,
       actionLabel: card.actionLabel || fallbackCard.actionLabel,
       pdfUrl: card.pdfUrl ?? '',
-      coverImageUrl: card.coverImageUrl ?? fallbackCard.coverImageUrl ?? '',
+      coverImageUrl: normalizeImageUrlInput(card.coverImageUrl, fallbackCard.coverImageUrl ?? ''),
       coverImageLayout: card.coverImageLayout === 'landscape' ? 'landscape' : fallbackCard.coverImageLayout || 'portrait',
       status: card.status || fallbackCard.status,
     };
@@ -71,16 +72,19 @@ export function normalizeSiteContent(content: Partial<SiteContentState> | null |
     brandSettings: {
       ...defaultSiteContent.brandSettings,
       ...content?.brandSettings,
+      logoUrl: normalizeImageUrlInput(content?.brandSettings?.logoUrl, defaultSiteContent.brandSettings.logoUrl),
     },
     heroBanner: {
       ...defaultSiteContent.heroBanner,
       ...content?.heroBanner,
+      imageUrl: normalizeImageUrlInput(content?.heroBanner?.imageUrl, defaultSiteContent.heroBanner.imageUrl),
       imageOverlayOpacity,
     },
     loginPage: {
       ...defaultSiteContent.loginPage,
       ...content?.loginPage,
-      backgroundImageUrl: content?.loginPage?.backgroundImageUrl || defaultSiteContent.loginPage.backgroundImageUrl,
+      sideImageUrl: normalizeImageUrlInput(content?.loginPage?.sideImageUrl, defaultSiteContent.loginPage.sideImageUrl),
+      backgroundImageUrl: normalizeImageUrlInput(content?.loginPage?.backgroundImageUrl, defaultSiteContent.loginPage.backgroundImageUrl),
       backgroundImageEnabled: content?.loginPage?.backgroundImageEnabled ?? defaultSiteContent.loginPage.backgroundImageEnabled,
       backgroundOverlayOpacity: loginBackgroundOverlayOpacity,
       loginPanelGradientEnabled: content?.loginPage?.loginPanelGradientEnabled ?? defaultSiteContent.loginPage.loginPanelGradientEnabled,
@@ -91,10 +95,10 @@ export function normalizeSiteContent(content: Partial<SiteContentState> | null |
     portalPage: {
       ...defaultSiteContent.portalPage,
       ...content?.portalPage,
-      backgroundImageUrl: content?.portalPage?.backgroundImageUrl || defaultSiteContent.portalPage.backgroundImageUrl,
+      backgroundImageUrl: normalizeImageUrlInput(content?.portalPage?.backgroundImageUrl, defaultSiteContent.portalPage.backgroundImageUrl),
       backgroundImageEnabled: content?.portalPage?.backgroundImageEnabled ?? defaultSiteContent.portalPage.backgroundImageEnabled,
       backgroundOverlayOpacity: portalBackgroundOverlayOpacity,
-      headerBackgroundImageUrl: content?.portalPage?.headerBackgroundImageUrl || defaultSiteContent.portalPage.headerBackgroundImageUrl,
+      headerBackgroundImageUrl: normalizeImageUrlInput(content?.portalPage?.headerBackgroundImageUrl, defaultSiteContent.portalPage.headerBackgroundImageUrl),
       headerBackgroundImageEnabled: content?.portalPage?.headerBackgroundImageEnabled ?? defaultSiteContent.portalPage.headerBackgroundImageEnabled,
       headerOverlayColor: content?.portalPage?.headerOverlayColor || defaultSiteContent.portalPage.headerOverlayColor,
       headerOverlayOpacity: portalHeaderOverlayOpacity,
@@ -134,8 +138,9 @@ export function saveSiteContent(content: SiteContentState) {
     return;
   }
 
-  window.localStorage.setItem(SITE_CONTENT_STORAGE_KEY, JSON.stringify(content));
-  window.dispatchEvent(new CustomEvent(SITE_CONTENT_UPDATED_EVENT, { detail: content }));
+  const normalizedContent = normalizeSiteContent(content);
+  window.localStorage.setItem(SITE_CONTENT_STORAGE_KEY, JSON.stringify(normalizedContent));
+  window.dispatchEvent(new CustomEvent(SITE_CONTENT_UPDATED_EVENT, { detail: normalizedContent }));
 }
 
 export function resetSiteContent() {

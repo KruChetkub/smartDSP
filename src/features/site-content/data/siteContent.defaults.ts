@@ -10,8 +10,7 @@ export const defaultSiteContent: SiteContentState = {
     title: 'ศูนย์รวมข้อมูล แผนงาน และข่าวประชาสัมพันธ์',
     description:
       'ติดตามประกาศสำคัญ เอกสารเผยแพร่ และช่องทางเข้าสู่ระบบงานด้านแผนและพัฒนาบุคลากรของกองยุทธศาสตร์และแผนงาน',
-    imageUrl:
-      'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&w=1800&q=80',
+    imageUrl: '/SmartDSP.png',
     imageOverlayOpacity: 58,
     primaryActionLabel: 'เข้าสู่ระบบ PTDMS',
     primaryActionHref: '/login',

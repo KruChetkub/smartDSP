@@ -81,6 +81,59 @@ export function sanitizeUrlInput(value: string | null | undefined, options: { fi
 
   return text;
 }
+
+const TRUSTED_IMAGE_ORIGINS = new Set(['https://asntgpqwccsbdzppnjxk.supabase.co']);
+
+try {
+  const configuredSupabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
+  if (configuredSupabaseUrl) {
+    TRUSTED_IMAGE_ORIGINS.add(new URL(configuredSupabaseUrl).origin);
+  }
+} catch {
+  // Ignore an invalid optional build-time URL; the production origin remains trusted.
+}
+
+export function sanitizeImageUrlInput(value: string | null | undefined, options: { fieldName?: string; maxLength?: number } = {}) {
+  const fieldName = options.fieldName || 'URL รูปภาพ';
+  const maxLength = options.maxLength || 2048;
+  const text = String(value ?? '')
+    .replace(/\u0000/g, '')
+    .replace(/[\u0001-\u001F\u007F]/g, '')
+    .trim();
+
+  if (!text) {
+    return null;
+  }
+
+  if (text.length > maxLength) {
+    throw new Error(`${fieldName}ต้องไม่เกิน ${maxLength.toLocaleString('th-TH')} ตัวอักษร`);
+  }
+
+  if (text.startsWith('/') && !text.startsWith('//')) {
+    return text;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new Error(`${fieldName}ต้องเป็นพาธภายในเว็บไซต์ หรือ URL ที่ถูกต้อง`);
+  }
+
+  if (url.protocol !== 'https:' || !TRUSTED_IMAGE_ORIGINS.has(url.origin)) {
+    throw new Error(`${fieldName}ต้องมาจากเว็บไซต์นี้หรือพื้นที่จัดเก็บ Supabase ของระบบเท่านั้น`);
+  }
+
+  return text;
+}
+
+export function normalizeImageUrlInput(value: string | null | undefined, fallback = '') {
+  try {
+    return sanitizeImageUrlInput(value) || fallback;
+  } catch {
+    return fallback;
+  }
+}
 export function validateUploadFile(file: File, options: FileValidationOptions) {
   const label = options.label || 'ไฟล์';
 

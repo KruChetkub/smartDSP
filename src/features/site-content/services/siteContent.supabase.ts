@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
 import type { SiteContentState } from '../types/siteContent.types';
+import { normalizeSiteContent } from './siteContent.storage';
 
 const HOME_CONTENT_KEY = 'public-home';
 
@@ -27,13 +28,14 @@ export async function loadSiteContentFromSupabase() {
 }
 
 export async function saveSiteContentToSupabase(content: SiteContentState) {
+  const normalizedContent = normalizeSiteContent(content);
   const { data } = await runSupabaseQuery(
     supabase
       .from('site_content_documents')
       .upsert(
         {
           content_key: HOME_CONTENT_KEY,
-          content: content as unknown as Record<string, unknown>,
+          content: normalizedContent as unknown as Record<string, unknown>,
           status: 'published',
           published_at: new Date().toISOString(),
         },

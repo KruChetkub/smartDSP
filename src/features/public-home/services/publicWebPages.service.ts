@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
-import { sanitizePlainTextInput, sanitizeUrlInput } from '../../../utils/inputSecurity';
+import { sanitizeImageUrlInput, sanitizePlainTextInput, sanitizeUrlInput } from '../../../utils/inputSecurity';
 import { createUuid } from '../../../utils/uuid';
 import type { PublicRepositoryCategoryTone } from './publicRepositoryCategories.service';
 
@@ -154,7 +154,7 @@ function mapItemToRow(item: PublicWebPageItem) {
     title: sanitizePlainTextInput(item.title, { fieldName: 'ชื่อแผน/เอกสาร', maxLength: 160, allowNewlines: false }),
     description: sanitizePlainTextInput(item.description, { fieldName: 'รายละเอียด', maxLength: 4000, allowNewlines: true }),
     pdf_url: sanitizeUrlInput(item.pdfUrl, { fieldName: 'ลิงก์เอกสาร PDF', maxLength: 2048 }) || '',
-    cover_image_url: sanitizeUrlInput(item.coverImageUrl, { fieldName: 'ลิงก์ภาพหน้าปก', maxLength: 2048 }) || '',
+    cover_image_url: sanitizeImageUrlInput(item.coverImageUrl, { fieldName: 'ลิงก์ภาพหน้าปก', maxLength: 2048 }) || '',
     cover_image_layout: item.coverImageLayout,
     sort_order: Math.max(1, Math.round(item.sortOrder || 10)),
     status: item.status,

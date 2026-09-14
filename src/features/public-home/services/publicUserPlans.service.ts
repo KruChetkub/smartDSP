@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
 import { createUuid } from '../../../utils/uuid';
+import { sanitizeImageUrlInput } from '../../../utils/inputSecurity';
 import type { SiteContentPlanCard } from '../../site-content/types/siteContent.types';
 
 export type PublicUserPlanCategory = string;
@@ -188,7 +189,7 @@ function mapPlanToRow(plan: PublicUserPlan) {
     color: normalized.card.color || getPublicUserPlanCategoryColor(normalized.category),
     action_label: normalized.card.actionLabel,
     pdf_url: normalized.card.pdfUrl,
-    cover_image_url: normalized.card.coverImageUrl || '',
+    cover_image_url: sanitizeImageUrlInput(normalized.card.coverImageUrl, { fieldName: 'ลิงก์ภาพหน้าปก', maxLength: 2048 }) || '',
     cover_image_layout: normalized.card.coverImageLayout === 'landscape' ? 'landscape' : 'portrait',
     status: normalized.card.status === 'published' ? 'published' : 'draft',
   };

@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
 import { createUuid } from '../../../utils/uuid';
+import { sanitizeImageUrlInput } from '../../../utils/inputSecurity';
 import type { SiteContentPlanCoverLayout, SiteContentPlanIconKey, SiteContentStatus } from '../../site-content/types/siteContent.types';
 
 export type PerformanceResultCategory = string;
@@ -125,7 +126,7 @@ function toRow(result: PublicPerformanceResult) {
     color: result.color || getPerformanceCategory(result.category).color,
     action_label: result.actionLabel.trim() || 'ดูผลการดำเนินงาน',
     pdf_url: result.pdfUrl.trim(),
-    cover_image_url: result.coverImageUrl.trim(),
+    cover_image_url: sanitizeImageUrlInput(result.coverImageUrl, { fieldName: 'ลิงก์ภาพหน้าปก', maxLength: 2048 }) || '',
     cover_image_layout: result.coverImageLayout,
     status: result.status === 'published' ? 'published' : 'draft',
   };

@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
 import { createUuid } from '../../../utils/uuid';
+import { sanitizeImageUrlInput } from '../../../utils/inputSecurity';
 import type { SiteContentPlanCoverLayout, SiteContentStatus } from '../../site-content/types/siteContent.types';
 
 export type ResearchCategory = string;
@@ -119,7 +120,7 @@ function toRow(item: PublicResearchItem) {
     color: item.color || getResearchCategory(item.category).color,
     action_label: item.actionLabel.trim() || 'เปิดเอกสารงานวิจัย',
     pdf_url: item.pdfUrl.trim(),
-    cover_image_url: item.coverImageUrl.trim(),
+    cover_image_url: sanitizeImageUrlInput(item.coverImageUrl, { fieldName: 'ลิงก์ภาพหน้าปก', maxLength: 2048 }) || '',
     cover_image_layout: item.coverImageLayout,
     status: item.status === 'published' ? 'published' : 'draft',
   };

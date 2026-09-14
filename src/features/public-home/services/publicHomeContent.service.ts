@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { runSupabaseQuery } from '../../../lib/supabase-query';
 import { createUuid } from '../../../utils/uuid';
-import { sanitizeUrlInput } from '../../../utils/inputSecurity';
+import { sanitizeImageUrlInput, sanitizeUrlInput } from '../../../utils/inputSecurity';
 
 export type PublicHomeContentSection = string;
 export type PublicHomeTargetView = 'plans' | 'performance' | 'research';
@@ -100,7 +100,7 @@ function mapToRow(item: PublicHomeContentItem) {
     target_view: item.targetView,
     icon_key: item.iconKey,
     color_key: item.colorKey,
-    logo_url: item.logoUrl.trim(),
+    logo_url: sanitizeImageUrlInput(item.logoUrl, { fieldName: 'ลิงก์โลโก้', maxLength: 2048 }) || '',
     pdf_url: sanitizeUrlInput(item.pdfUrl, { fieldName: 'ลิงก์เอกสาร PDF', maxLength: 2048 }) || '',
     sort_order: Math.max(1, Math.round(item.sortOrder)),
     status: item.status,
