@@ -58,8 +58,8 @@ for (const name of ['script-src', 'style-src', 'style-src-elem']) {
   }
 }
 
-if (headerMap.has('access-control-allow-origin')) {
-  throw new Error('Static site responses must not opt into cross-origin reads.');
+if (headerMap.get('access-control-allow-origin') !== 'https://smart-dsp.vercel.app') {
+  throw new Error('Static site responses must allow only the SmartDSP production origin.');
 }
 
 console.log('Security header configuration passed.');

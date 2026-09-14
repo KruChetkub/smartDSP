@@ -41,8 +41,8 @@ type PublicHomeContentRow = {
   pdf_url: string;
   sort_order: number;
   status: PublicHomeContentStatus;
-  created_by: string | null;
-  updated_by: string | null;
+  created_by?: string | null;
+  updated_by?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -63,7 +63,8 @@ export const defaultPublicHomeContent: PublicHomeContentItem[] = [
   { id: 'default-policy-4', section: 'policy', title: 'งบประมาณและแผนปฏิบัติราชการประจำปี', description: 'เอกสารงบประมาณ แผนปฏิบัติราชการ และข้อมูลประกอบการบริหารทรัพยากรประจำปี', actionLabel: 'ดูแผนและเอกสาร', targetView: 'plans', iconKey: 'coins', colorKey: 'teal', logoUrl: '', pdfUrl: '', sortOrder: 40, status: 'published', createdBy: null, updatedBy: null, createdAt: '', updatedAt: '' },
 ];
 
-const selectColumns = 'id, section, title, description, action_label, target_view, icon_key, color_key, logo_url, pdf_url, sort_order, status, created_by, updated_by, created_at, updated_at';
+const publicSelectColumns = 'id, section, title, description, action_label, target_view, icon_key, color_key, logo_url, pdf_url, sort_order, status, created_at, updated_at';
+const adminSelectColumns = `${publicSelectColumns}, created_by, updated_by`;
 
 function contentTable() {
   return (supabase.from as unknown as SupabaseFrom)('public_home_content_items');
@@ -83,8 +84,8 @@ function mapRow(row: PublicHomeContentRow): PublicHomeContentItem {
     pdfUrl: row.pdf_url || '',
     sortOrder: row.sort_order,
     status: row.status,
-    createdBy: row.created_by,
-    updatedBy: row.updated_by,
+    createdBy: row.created_by ?? null,
+    updatedBy: row.updated_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -116,15 +117,28 @@ export function comparePublicHomeContent(first: PublicHomeContentItem, second: P
 
 export async function loadPublicHomeContent() {
   const { data } = await runSupabaseQuery<SupabaseResult<PublicHomeContentRow[]>>(
-    contentTable().select(selectColumns).order('section').order('sort_order').order('created_at'),
+    contentTable().select(adminSelectColumns).order('section').order('sort_order').order('created_at'),
     'โหลดข้อมูลหน้า Home',
+  );
+  return ((data || []) as PublicHomeContentRow[]).map(mapRow).sort(comparePublicHomeContent);
+}
+
+async function loadPublishedPublicHomeContent() {
+  const { data } = await runSupabaseQuery<SupabaseResult<PublicHomeContentRow[]>>(
+    contentTable()
+      .select(publicSelectColumns)
+      .eq('status', 'published')
+      .order('section')
+      .order('sort_order')
+      .order('created_at'),
+    'โหลดข้อมูลหน้า Home สาธารณะ',
   );
   return ((data || []) as PublicHomeContentRow[]).map(mapRow).sort(comparePublicHomeContent);
 }
 
 export async function loadPublicHomeContentOrDefaults() {
   try {
-    const items = await loadPublicHomeContent();
+    const items = await loadPublishedPublicHomeContent();
     return items.length > 0 ? items : defaultPublicHomeContent;
   } catch {
     return defaultPublicHomeContent;
@@ -134,12 +148,12 @@ export async function loadPublicHomeContentOrDefaults() {
 export async function savePublicHomeContent(item: PublicHomeContentItem) {
   const row = mapToRow(item);
   const { data: updatedData } = await runSupabaseQuery<SupabaseResult<PublicHomeContentRow | null>>(
-    contentTable().update(row).eq('id', item.id).select(selectColumns).maybeSingle(),
+    contentTable().update(row).eq('id', item.id).select(adminSelectColumns).maybeSingle(),
     'แก้ไขข้อมูลหน้า Home',
   );
 
   const savedRow = updatedData || (await runSupabaseQuery<SupabaseResult<PublicHomeContentRow>>(
-    contentTable().insert(row).select(selectColumns).single(),
+    contentTable().insert(row).select(adminSelectColumns).single(),
     'เพิ่มข้อมูลหน้า Home',
   )).data;
   const savedItem = mapRow(savedRow);
@@ -149,7 +163,7 @@ export async function savePublicHomeContent(item: PublicHomeContentItem) {
 
 export async function updatePublicHomeContentStatus(id: string, status: PublicHomeContentStatus, userId: string) {
   const { data } = await runSupabaseQuery<SupabaseResult<PublicHomeContentRow>>(
-    contentTable().update({ status, updated_by: userId }).eq('id', id).select(selectColumns).single(),
+    contentTable().update({ status, updated_by: userId }).eq('id', id).select(adminSelectColumns).single(),
     'เปลี่ยนสถานะข้อมูลหน้า Home',
   );
   const savedItem = mapRow(data);

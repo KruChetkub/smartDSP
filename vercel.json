@@ -28,6 +28,10 @@
           "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
         },
         {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://smart-dsp.vercel.app"
+        },
+        {
           "key": "Cache-Control",
           "value": "no-store"
         },

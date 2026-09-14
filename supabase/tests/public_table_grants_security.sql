@@ -49,6 +49,13 @@ begin
           role_name,
           relation_record.table_oid,
           operation
+        ) or (
+          operation = 'SELECT'
+          and has_any_column_privilege(
+            role_name,
+            relation_record.table_oid,
+            operation
+          )
         );
 
         select exists (
@@ -102,6 +109,18 @@ begin
       end if;
     end loop;
   end loop;
+
+  if has_column_privilege('anon', 'public.public_home_content_items', 'created_by', 'SELECT')
+    or has_column_privilege('anon', 'public.public_home_content_items', 'updated_by', 'SELECT')
+  then
+    raise exception 'anon can read internal author columns from public_home_content_items';
+  end if;
+
+  if not has_column_privilege('anon', 'public.public_home_content_items', 'id', 'SELECT')
+    or not has_column_privilege('anon', 'public.public_home_content_items', 'title', 'SELECT')
+  then
+    raise exception 'anon lost required public columns from public_home_content_items';
+  end if;
 end;
 $block$;
 
