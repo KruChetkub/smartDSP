@@ -4,7 +4,7 @@ import { readJsonObject, RequestBodyError } from '../_shared/request-security.ts
 import { consumeRateLimit, rateLimitHeaders, type RateLimitClient } from '../_shared/rate-limit.ts';
 
 const defaultAllowedOrigins = [
-  'https://ptdms.vercel.app',
+  'https://smart-dsp.vercel.app',
   'http://localhost:5173',
 ];
 

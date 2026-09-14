@@ -29,7 +29,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://ptdms.vercel.app"
+          "value": "https://smart-dsp.vercel.app"
         },
         {
           "key": "Cache-Control",

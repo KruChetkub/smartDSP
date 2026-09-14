@@ -7,7 +7,7 @@ const exportBatchSize = 1000;
 const statusUpdateChunkSize = 100;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('SMARTDSP_ALLOWED_ORIGIN') ?? 'https://ptdms.vercel.app',
+  'Access-Control-Allow-Origin': Deno.env.get('SMARTDSP_ALLOWED_ORIGIN') ?? 'https://smart-dsp.vercel.app',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-audit-export-secret',
   'Access-Control-Max-Age': '86400',
