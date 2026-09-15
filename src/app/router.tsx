@@ -14,6 +14,7 @@ import { PublicHomePage } from '../features/public-home/pages/PublicHomePage';
 import { PublicWebPageDetailPage } from '../features/public-home/pages/PublicWebPageDetailPage';
 import { StrategicPolicyHomePage } from '../features/public-home/pages/StrategicPolicyHomePage';
 import { PortalPage } from '../features/portal/PortalPage';
+import { RopaPage } from '../features/portal/RopaPage';
 import { SatisfactionSurveyPage } from '../features/surveys/SatisfactionSurveyPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AnalyticsPage } from '../features/analytics/AnalyticsPage';
@@ -99,6 +100,10 @@ export const router = createBrowserRouter([
       {
         path: '/portal',
         element: <PortalPage />,
+      },
+      {
+        path: '/ropa',
+        element: <RopaPage />,
       },
       {
         path: '/satisfaction-survey',

@@ -3,12 +3,37 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { readJsonObject, RequestBodyError } from '../_shared/request-security.ts';
 import { consumeRateLimit, rateLimitHeaders, type RateLimitClient } from '../_shared/rate-limit.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('SMARTDSP_ALLOWED_ORIGIN') ?? 'https://smart-dsp.vercel.app',
+const defaultAllowedOrigins = [
+  'https://smart-dsp.vercel.app',
+  'http://localhost:5173',
+];
+
+const baseCorsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
 };
+
+function getAllowedOrigins() {
+  const configuredOrigins = [
+    Deno.env.get('SMARTDSP_ALLOWED_ORIGIN'),
+    Deno.env.get('SMARTDSP_ALLOWED_ORIGINS'),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return new Set([...defaultAllowedOrigins, ...configuredOrigins]);
+}
+
+function getCorsHeaders(origin: string) {
+  return {
+    ...baseCorsHeaders,
+    'Access-Control-Allow-Origin': origin,
+    Vary: 'Origin',
+  };
+}
 
 const sensitiveKeyPattern = /(password|token|secret|apikey|api_key|authorization|otp|refresh|access)/i;
 
@@ -28,11 +53,13 @@ type AuditLogBody = {
   userAgent?: unknown;
 };
 
-function jsonResponse(body: Record<string, unknown>, status = 200, extraHeaders: HeadersInit = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json', ...extraHeaders },
-  });
+function createJsonResponse(corsHeaders: Record<string, string>) {
+  return (body: Record<string, unknown>, status = 200, extraHeaders: HeadersInit = {}) => (
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', ...extraHeaders },
+    })
+  );
 }
 
 function sanitizeValue(value: unknown): unknown {
@@ -81,6 +108,18 @@ function getRequestIp(req: Request) {
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('origin');
+  const allowedOrigins = getAllowedOrigins();
+  if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
+    return new Response(JSON.stringify({ logged: false, reason: 'origin_not_allowed' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', Vary: 'Origin' },
+    });
+  }
+
+  const corsHeaders = getCorsHeaders(requestOrigin ?? defaultAllowedOrigins[0]);
+  const jsonResponse = createJsonResponse(corsHeaders);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

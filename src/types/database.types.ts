@@ -212,6 +212,23 @@ export type PortalUserManual = {
   created_at: string;
   updated_at: string;
 };
+
+export type RopaLink = {
+  id: string;
+  title: string;
+  description: string | null;
+  link_url: string;
+  icon_url: string | null;
+  icon_path: string | null;
+  preview_url: string | null;
+  preview_path: string | null;
+  is_active: boolean;
+  sort_order: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type StrategyEventStatus = 'draft' | 'published' | 'cancelled';
 
 export type StrategyEvent = {
@@ -782,6 +799,26 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<PortalUserManual, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      ropa_links: {
+        Row: RopaLink;
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          link_url: string;
+          icon_url?: string | null;
+          icon_path?: string | null;
+          preview_url?: string | null;
+          preview_path?: string | null;
+          is_active?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<RopaLink, 'id' | 'created_at'>>;
         Relationships: [];
       };
       smartdsp_surveys: {

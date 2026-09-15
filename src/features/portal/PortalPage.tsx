@@ -110,11 +110,11 @@ const externalSystems: PortalCard[] = [
     title: 'บันทึกรายการประมวลผลข้อมูลส่วนบุคคลสำหรับผู้ควบคุมข้อมูลส่วนบุคคล (Record of Processing Activities for Data Controller Form)',
     shortTitle: 'บันทึกรายการประมวลผลข้อมูลส่วนบุคคล (ROPA)',
     description: 'แบบบันทึกรายการประมวลผลข้อมูลส่วนบุคคลสำหรับผู้ควบคุมข้อมูลส่วนบุคคล',
-    externalUrl: 'https://docs.google.com/spreadsheets/d/1bUQ6hboYaAQacqQANjtzSegFUT4wAFoO5iuqFEJnbig/edit?usp=sharing',
+    to: '/ropa',
     icon: ClipboardCheck,
     roles: ['super_admin', 'admin', 'executive', 'hr', 'personnel'],
     accent: 'from-violet-700 to-fuchsia-500',
-    meta: 'ROPA Form',
+    meta: 'ROPA',
   },
 ];
 
