@@ -10,7 +10,6 @@ import { SiteManagerPortalPageEditor } from '../components/SiteManagerPortalPage
 import { SiteManagerPlanDocumentsEditor } from '../components/SiteManagerPlanDocumentsEditor';
 import { SiteManagerPlanPreview } from '../components/SiteManagerPlanPreview';
 import { SiteManagerPortalManualsEditor } from '../components/SiteManagerPortalManualsEditor';
-import { SiteManagerSecuritySettings } from '../components/SiteManagerSecuritySettings';
 import { SiteManagerSatisfactionSurveyEditor } from '../components/SiteManagerSatisfactionSurveyEditor';
 import { SiteManagerSystemSatisfactionSurveysEditor } from '../components/SiteManagerSystemSatisfactionSurveysEditor';
 
@@ -32,10 +31,9 @@ type SiteManagerTab =
   | 'login-page'
   | 'portal-page'
   | 'satisfaction-survey'
-  | 'system-satisfaction-surveys'
-  | 'security';
+  | 'system-satisfaction-surveys';
 
-const siteManagerTabs: Array<{ id: SiteManagerTab; label: string; superAdminOnly?: boolean; hidden?: boolean }> = [
+const siteManagerTabs: Array<{ id: SiteManagerTab; label: string; hidden?: boolean }> = [
   { id: 'branding', label: 'โลโก้/แบรนด์' },
   { id: 'home-content', label: 'ป้าย/ข่าวประชาสัมพันธ์', hidden: true },
   { id: 'plan-documents', label: 'แผนระดับต่าง ๆ', hidden: true },
@@ -49,7 +47,6 @@ const siteManagerTabs: Array<{ id: SiteManagerTab; label: string; superAdminOnly
   { id: 'portal-page', label: 'จัดการภาพหน้า Portal' },
   { id: 'satisfaction-survey', label: 'แบบสำรวจความพึงพอใจ' },
   { id: 'system-satisfaction-surveys', label: 'แบบสำรวจความพึงพอใจแยกตามระบบ' },
-  { id: 'security', label: 'ความปลอดภัย', superAdminOnly: true },
 ];
 
 export function SiteManagerPage() {
@@ -60,7 +57,7 @@ export function SiteManagerPage() {
   const [activeTab, setActiveTab] = useState<SiteManagerTab>('branding');
   const [planFocusTarget, setPlanFocusTarget] = useState<PlanFocusTarget | null>(null);
   const canManageSecurity = profile?.role === 'super_admin';
-  const visibleTabs = siteManagerTabs.filter((tab) => !tab.hidden && (!tab.superAdminOnly || canManageSecurity));
+  const visibleTabs = siteManagerTabs.filter((tab) => !tab.hidden);
   const activePlanPreview =
     activeTab === 'plan-documents'
       ? { title: 'แผนระดับต่าง ๆ', cards: contentDraft.planLevelCards }
@@ -291,8 +288,6 @@ export function SiteManagerPage() {
           <SiteManagerSatisfactionSurveyEditor />
         ) : activeTab === 'system-satisfaction-surveys' ? (
           <SiteManagerSystemSatisfactionSurveysEditor />
-        ) : canManageSecurity ? (
-          <SiteManagerSecuritySettings />
         ) : (
           <SiteManagerBrandingEditor
             brandSettings={contentDraft.brandSettings}

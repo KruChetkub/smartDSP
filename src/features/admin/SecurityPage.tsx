@@ -14,12 +14,14 @@ import {
   Smartphone,
   ShieldAlert,
   Ban,
+  TimerReset,
 } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { BackupRestorePanel } from './BackupRestorePanel';
 import { ForceChangePasswordPanel } from './ForceChangePasswordPanel';
 import { MfaEnforcementPanel } from './MfaEnforcementPanel';
 import { LoginIpBlockPanel } from './LoginIpBlockPanel';
+import { SiteManagerSecuritySettings } from '../site-manager/components/SiteManagerSecuritySettings';
 import {
   acknowledgeSecurityAlert,
   exportAuditLogsToGoogleSheet,
@@ -33,7 +35,7 @@ import { roleLabels } from '../../types/roles';
 import { getSafeUserErrorMessage } from '../../utils/errorHandling';
 
 const loginHistoryPageSize = 10;
-type SecurityTab = 'history' | 'ip-blocks' | 'backup' | 'force-password' | 'mfa';
+type SecurityTab = 'history' | 'ip-blocks' | 'backup' | 'force-password' | 'mfa' | 'login-settings';
 
 const securityAlertLabels: Record<SecurityAlert['alert_type'], { title: string; description: string }> = {
   repeated_ip_failures: {
@@ -198,6 +200,7 @@ export function SecurityPage() {
           { value: 'backup', label: 'Backup / Restore', icon: RotateCcw },
           { value: 'force-password', label: 'Force Change Password', icon: KeyRound },
           { value: 'mfa', label: 'MFA Enforcement', icon: Smartphone },
+          { value: 'login-settings', label: 'ตั้งค่าการลงชื่อเข้าใช้', icon: TimerReset },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
@@ -497,8 +500,10 @@ export function SecurityPage() {
         <BackupRestorePanel />
       ) : activeTab === 'force-password' ? (
         <ForceChangePasswordPanel />
-      ) : (
+      ) : activeTab === 'mfa' ? (
         <MfaEnforcementPanel />
+      ) : (
+        <SiteManagerSecuritySettings />
       )}
     </div>
   );

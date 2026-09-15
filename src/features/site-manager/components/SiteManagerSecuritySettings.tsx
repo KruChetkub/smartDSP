@@ -73,9 +73,9 @@ export function SiteManagerSecuritySettings() {
         <div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-brand-700" aria-hidden="true" />
-            <h2 className="text-lg font-semibold tracking-normal text-slate-950">ความปลอดภัย</h2>
+            <h2 className="text-lg font-semibold tracking-normal text-slate-950">การตั้งค่าการลงชื่อเข้าใช้</h2>
           </div>
-          <p className="mt-1 text-sm text-slate-500">การตั้งค่าด้านความปลอดภัยของระบบสำหรับ Super Admin</p>
+          <p className="mt-1 text-sm text-slate-500">กำหนดเวลาลงชื่อออกอัตโนมัติสำหรับผู้ใช้ทุกสิทธิ์ โดย Super Admin เท่านั้น</p>
         </div>
 
         <button
@@ -96,7 +96,7 @@ export function SiteManagerSecuritySettings() {
               <TimerReset className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-semibold text-slate-950">การตั้งค่าการลงชื่อเข้าใช้</h3>
+              <h3 className="text-base font-semibold text-slate-950">ระยะเวลาไม่มีการใช้งาน</h3>
               <p className="mt-1 text-sm text-slate-600">
                 ตั้งค่าตัวตั้งเวลาลงชื่อออกโดยอัตโนมัติของเบราว์เวอร์สำหรับระบบ
               </p>
