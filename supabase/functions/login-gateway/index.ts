@@ -279,6 +279,19 @@ serve(async (req) => {
       return jsonResponse({ reason: 'invalid_credentials' }, 401);
     }
 
+    const authenticatedUser = {
+      id: authData.user.id,
+      email: authData.user.email,
+    };
+
+    await recordAttempt(adminClient, {
+      success: true,
+      email,
+      ipAddress,
+      userAgent,
+      user: authenticatedUser,
+    });
+
     return jsonResponse({
       access_token: authData.access_token,
       refresh_token: authData.refresh_token,

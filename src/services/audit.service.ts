@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { AuditLog, SecurityAlert } from '../types/database.types';
+import type { UserRole } from '../types/roles';
 
 export type { SecurityAlert } from '../types/database.types';
 
@@ -11,6 +12,7 @@ export type LoginHistory = {
   user_agent: string | null;
   success: boolean;
   user_name?: string;
+  user_role: UserRole | null;
 };
 
 export type AuditLogStatus = 'success' | 'fail';
@@ -250,7 +252,7 @@ export async function listAuditLogs(limit = 200) {
 export async function listLoginHistory(limit = 100) {
   const { data, error } = await supabase
     .from('login_history')
-    .select('*, profiles(full_name)')
+    .select('id, user_id, login_at, ip_address, user_agent, success, profiles(full_name, role)')
     .order('login_at', { ascending: false })
     .limit(limit);
 
@@ -261,6 +263,7 @@ export async function listLoginHistory(limit = 100) {
   return rows.map((history: any) => ({
     ...history,
     user_name: history.profiles?.full_name || 'Unknown',
+    user_role: history.profiles?.role ?? null,
   })) as LoginHistory[];
 }
 

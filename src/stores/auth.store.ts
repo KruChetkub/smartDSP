@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { env } from '../lib/env';
-import { recordAuditLog, recordLoginAttempt } from '../services/audit.service';
+import { recordAuditLog } from '../services/audit.service';
 import type { Profile } from '../types/database.types';
 import { isPasswordPolicySatisfied } from '../features/auth/passwordPolicy';
 
@@ -335,11 +335,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       : [null, []];
     set({ session: data.session, user: data.user, profile, permissions, assuranceLevel, mfaPending: null, loading: false });
 
-    void recordLoginAttempt({
-      email: normalizedEmail,
-      success: true,
-      accessToken: data.session?.access_token ?? null,
-    });
   },
 
   verifyMfa: async (factorId: string, code: string) => {
@@ -360,14 +355,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       : [null, []];
 
     set({ user: userData.user, profile, permissions, assuranceLevel: 'aal2', mfaPending: null, loading: false });
-
-    if (userData.user?.email) {
-      void recordLoginAttempt({
-        email: userData.user.email.toLowerCase(),
-        success: true,
-        accessToken: (await supabase.auth.getSession()).data.session?.access_token ?? null,
-      });
-    }
 
     return data;
   },

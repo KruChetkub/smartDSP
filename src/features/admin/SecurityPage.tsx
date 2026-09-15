@@ -29,6 +29,7 @@ import {
   type LoginHistory,
   type SecurityAlert,
 } from '../../services/audit.service';
+import { roleLabels } from '../../types/roles';
 import { getSafeUserErrorMessage } from '../../utils/errorHandling';
 
 const loginHistoryPageSize = 10;
@@ -82,18 +83,30 @@ export function SecurityPage() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadHistory = async () => {
-      setLoading(true);
+    let active = true;
+
+    const loadHistory = async (showLoading = false) => {
+      if (showLoading) setLoading(true);
       try {
         const data = await listLoginHistory(500);
+        if (!active) return;
         setHistory(Array.isArray(data) ? data : []);
+        setError(null);
       } catch (err) {
+        if (!active) return;
         setError(getSafeUserErrorMessage(err, 'ไม่สามารถโหลดประวัติการล็อกอินได้'));
       } finally {
-        setLoading(false);
+        if (active && showLoading) setLoading(false);
       }
     };
-    void loadHistory();
+
+    void loadHistory(true);
+    const refreshTimer = window.setInterval(() => void loadHistory(), 60_000);
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -377,11 +390,12 @@ export function SecurityPage() {
           {error ? <div className="border-b border-red-100 bg-red-50 px-6 py-3 text-sm text-red-700">{error}</div> : null}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-slate-50/50 text-xs font-bold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-6 py-3">ลำดับ</th>
                   <th className="px-6 py-3">ผู้ใช้งาน</th>
+                  <th className="px-6 py-3">สิทธิ์</th>
                   <th className="px-6 py-3">วันเวลา</th>
                   <th className="px-6 py-3">สถานะ</th>
                   <th className="px-6 py-3">IP / อุปกรณ์</th>
@@ -391,12 +405,12 @@ export function SecurityPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={5} className="px-6 py-4"><div className="h-8 rounded bg-slate-50" /></td>
+                      <td colSpan={6} className="px-6 py-4"><div className="h-8 rounded bg-slate-50" /></td>
                     </tr>
                   ))
                 ) : safeHistory.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-slate-500">ไม่มีข้อมูลการล็อกอิน</td>
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-500">ไม่มีข้อมูลการล็อกอิน</td>
                   </tr>
                 ) : (
                   visibleHistory.map((log, index) => (
@@ -404,6 +418,15 @@ export function SecurityPage() {
                       <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-500">{historyPageStart + index + 1}</td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">{log.user_name}</div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {log.user_role ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                            {roleLabels[log.user_role]}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">ไม่ทราบสิทธิ์</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-slate-600">
                         <div className="flex items-center gap-1.5">
