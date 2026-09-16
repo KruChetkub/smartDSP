@@ -2281,31 +2281,46 @@ export function BudgetUtilizationItemsPage() {
                 </div>
               ) : null}
               {isOperationsCategorySelected && selectedCategoryMajorProjects.length > 0 ? (
-                <label className="block sm:col-span-2">
+                <div className="sm:col-span-2">
                   <span className="text-xs font-semibold text-slate-600">เลือกโครงการใหญ่เพื่อสร้างกิจกรรมย่อย</span>
-                  <select
-                    value={selectedMajorProjectId}
-                    onChange={(event) => {
-                      const majorProjectId = event.target.value;
-                      setSelectedMajorProjectId(majorProjectId);
-                      setSelectedSubActivityId('');
-                      setSubActivityForm({ ...emptySubActivityForm, parentId: majorProjectId });
-                      setChildForm(emptyChildForm);
-                    }}
-                    className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                  >
-                    <option value="">เลือกโครงการใหญ่</option>
-                    {selectedCategoryMajorProjects.map((project, index) => (
-                      <option key={project.id} value={project.id}>
-                        โครงการใหญ่ลำดับที่ {index + 1}: {project.item_name}
-                        {project.activity_sequence_label ? ` · กิจกรรมที่ ${project.activity_sequence_label}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <select
+                      value={selectedMajorProjectId}
+                      onChange={(event) => {
+                        const majorProjectId = event.target.value;
+                        setSelectedMajorProjectId(majorProjectId);
+                        setSelectedSubActivityId('');
+                        setSubActivityForm({ ...emptySubActivityForm, parentId: majorProjectId });
+                        setChildForm(emptyChildForm);
+                      }}
+                      className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    >
+                      <option value="">เลือกโครงการใหญ่</option>
+                      {selectedCategoryMajorProjects.map((project, index) => (
+                        <option key={project.id} value={project.id}>
+                          โครงการใหญ่ลำดับที่ {index + 1}: {project.item_name}
+                          {project.activity_sequence_label ? ` · กิจกรรมที่ ${project.activity_sequence_label}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedMajorProject ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMajorProjectForm(formFromItem(selectedMajorProject));
+                        }}
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-teal-300 bg-teal-50 px-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                        title="แก้ไขโครงการใหญ่ที่เลือก"
+                      >
+                        <Edit3 className="h-4 w-4" aria-hidden="true" />
+                        แก้ไขโครงการใหญ่
+                      </button>
+                    ) : null}
+                  </div>
                   <span className="mt-1 block text-xs text-slate-500">
                     กิจกรรมย่อยจะถูกจัดเก็บและแสดงตามลำดับภายใต้โครงการใหญ่ที่เลือก
                   </span>
-                </label>
+                </div>
               ) : null}
               {isOperationsCategorySelected && selectedMajorProject ? (
                 <div className="rounded-md border border-sky-200 bg-sky-50/50 p-3 sm:col-span-2">
@@ -2368,26 +2383,41 @@ export function BudgetUtilizationItemsPage() {
                 </div>
               ) : null}
               {isOperationsCategorySelected && selectedMajorProjectSubActivities.length > 0 ? (
-                <label className="block sm:col-span-2">
+                <div className="sm:col-span-2">
                   <span className="text-xs font-semibold text-slate-600">เลือกกิจกรรมย่อยเพื่อสร้างกิจกรรม</span>
-                  <select
-                    value={selectedSubActivityId}
-                    onChange={(event) => {
-                      const subActivityId = event.target.value;
-                      setSelectedSubActivityId(subActivityId);
-                      setChildForm({ ...emptyChildForm, parentId: subActivityId, rowType: 'activity' });
-                    }}
-                    className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                  >
-                    <option value="">เลือกกิจกรรมย่อย</option>
-                    {selectedMajorProjectSubActivities.map((subActivity, index) => (
-                      <option key={subActivity.id} value={subActivity.id}>
-                        กิจกรรมย่อยลำดับที่ {index + 1}: {subActivity.item_name}
-                        {subActivity.activity_sequence_label ? ` · ${subActivity.activity_sequence_label}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <select
+                      value={selectedSubActivityId}
+                      onChange={(event) => {
+                        const subActivityId = event.target.value;
+                        setSelectedSubActivityId(subActivityId);
+                        setChildForm({ ...emptyChildForm, parentId: subActivityId, rowType: 'activity' });
+                      }}
+                      className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    >
+                      <option value="">เลือกกิจกรรมย่อย</option>
+                      {selectedMajorProjectSubActivities.map((subActivity, index) => (
+                        <option key={subActivity.id} value={subActivity.id}>
+                          กิจกรรมย่อยลำดับที่ {index + 1}: {subActivity.item_name}
+                          {subActivity.activity_sequence_label ? ` · ${subActivity.activity_sequence_label}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedSubActivity ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubActivityForm(formFromItem(selectedSubActivity));
+                        }}
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-sky-300 bg-sky-50 px-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
+                        title="แก้ไขกิจกรรมย่อยที่เลือก"
+                      >
+                        <Edit3 className="h-4 w-4" aria-hidden="true" />
+                        แก้ไขกิจกรรมย่อย
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               ) : null}
               {!isOperationsCategorySelected ? (
                 <>
