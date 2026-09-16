@@ -661,6 +661,8 @@ export function BudgetUtilizationItemsPage() {
   const [trancheForm, setTrancheForm] = useState<TrancheForm>(emptyTrancheForm);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [isTrancheManagerOpen, setIsTrancheManagerOpen] = useState(false);
+  const [isAllocationEntryOpen, setIsAllocationEntryOpen] = useState(false);
+  const [isBudgetDataEntryOpen, setIsBudgetDataEntryOpen] = useState(false);
   const [isFormulaAuditOpen, setIsFormulaAuditOpen] = useState(false);
   const [formulaAuditItemId, setFormulaAuditItemId] = useState('');
   const [editModalItem, setEditModalItem] = useState<BudgetUtilizationItemWithAmount | null>(null);
@@ -1006,6 +1008,18 @@ export function BudgetUtilizationItemsPage() {
     return selectedMajorProjectSubActivities.find((item) => item.id === selectedSubActivityId) ?? null;
   }, [selectedMajorProjectSubActivities, selectedSubActivityId]);
 
+  const selectedSubActivityBudgetItems = useMemo(() => {
+    if (!selectedSubActivity) return [];
+    return allBudgetItems
+      .filter((item) => item.parent_id === selectedSubActivity.id && item.row_type === 'activity')
+      .sort((a, b) => {
+        const aSequence = a.activity_sequence_label ?? a.sequence_label ?? '';
+        const bSequence = b.activity_sequence_label ?? b.sequence_label ?? '';
+        const sequenceCompare = aSequence.localeCompare(bSequence, 'th', { numeric: true });
+        return sequenceCompare || a.sort_order - b.sort_order;
+      });
+  }, [allBudgetItems, selectedSubActivity]);
+
   const isOperationsCategorySelected = selectedMainCategory?.item_name.replace(/\s+/g, '').includes('งบดำเนินงาน') ?? false;
 
   const availableBudgetParents = useMemo(() => {
@@ -1110,6 +1124,12 @@ export function BudgetUtilizationItemsPage() {
     setAllocationItemSearch(getBudgetItemSearchLabel(item));
     setAllocationForm((current) => ({ ...current, itemId: item.id }));
     applySelectedAllocationItemValue(item, allocationForm.trancheKey);
+  };
+
+  const selectSubActivityBudgetItem = (item: BudgetUtilizationItemWithAmount) => {
+    setActiveTab('transactions');
+    selectAllocationBudgetItem(item);
+    selectTransactionBudgetItem(item);
   };
 
   useEffect(() => {
@@ -1283,6 +1303,7 @@ export function BudgetUtilizationItemsPage() {
     try {
       setSaving(true);
       setEditModalError(null);
+      const editedItemId = editModalItem.id;
       const activeReportPeriodId = await ensureReportPeriodId();
       await updateBudgetItemDetails(toItemPayload(
         activeReportPeriodId,
@@ -1292,7 +1313,16 @@ export function BudgetUtilizationItemsPage() {
       ));
       setEditModalItem(null);
       setEditModalForm(emptyMainForm);
-      await loadData(activeReportPeriodId);
+      const refreshedSummary = await loadData(activeReportPeriodId);
+      const refreshedItem = refreshedSummary?.items.find((item) => item.id === editedItemId) ?? null;
+      if (refreshedItem && allocationForm.itemId === editedItemId) {
+        setAllocationItemSearch(getBudgetItemSearchLabel(refreshedItem));
+        applySelectedAllocationItemValue(refreshedItem, allocationForm.trancheKey);
+      }
+      if (refreshedItem && disbursementForm.itemId === editedItemId) {
+        setTransactionItemSearch(getBudgetItemSearchLabel(refreshedItem));
+        applySelectedDisbursementItemValue(refreshedItem);
+      }
     } catch (saveError) {
       setEditModalError(getSafeUserErrorMessage(saveError, 'ไม่สามารถบันทึกการแก้ไขรายการได้'));
     } finally {
@@ -1980,8 +2010,18 @@ export function BudgetUtilizationItemsPage() {
     try {
       setSaving(true);
       setError(null);
-      await deleteBudgetItem(deleteTarget.id);
+      const deletedItemId = deleteTarget.id;
+      await deleteBudgetItem(deletedItemId);
       setDeleteTarget(null);
+      if (allocationForm.itemId === deletedItemId) {
+        setAllocationItemSearch('');
+        setAllocationForm((current) => ({ ...initialAllocationForm, trancheKey: current.trancheKey }));
+      }
+      if (disbursementForm.itemId === deletedItemId) {
+        setTransactionItemSearch('');
+        setDisbursementForm(initialDisbursementForm);
+        applySelectedDisbursementItemValue(null);
+      }
       await loadData(reportPeriodId);
     } catch (deleteError) {
       setError(getSafeUserErrorMessage(deleteError, 'ไม่สามารถลบรายการงบประมาณได้'));
@@ -2385,6 +2425,102 @@ export function BudgetUtilizationItemsPage() {
                 {saving ? 'กำลังบันทึก...' : childForm.itemId ? 'บันทึกรายการงบประมาณ' : selectedSubActivity ? 'เพิ่มกิจกรรม' : 'เพิ่มรายการงบประมาณ'}
               </button>
             ) : null}
+            {isOperationsCategorySelected && selectedSubActivity ? (
+              <div className="mt-4 overflow-hidden rounded-md border border-indigo-200 bg-white">
+                <div className="flex flex-col gap-2 border-b border-indigo-100 bg-indigo-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">รายการงบประมาณภายใต้กิจกรรมย่อยที่เลือก</h3>
+                    <p className="mt-1 text-xs text-slate-600">{selectedSubActivity.item_name}</p>
+                    <p className="mt-1 text-xs text-indigo-700">กดรายการเพื่อเลือกสำหรับจัดสรรงวดและกรอกข้อมูลงบประมาณ</p>
+                  </div>
+                  <span className="w-fit rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
+                    {selectedSubActivityBudgetItems.length} รายการ
+                  </span>
+                </div>
+                {selectedSubActivityBudgetItems.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+                        <tr>
+                          <th className="w-40 px-4 py-3">กิจกรรมที่</th>
+                          <th className="px-4 py-3">ชื่อรายการงบประมาณ</th>
+                          <th className="w-48 px-4 py-3 text-right">วงเงินงบประมาณ</th>
+                          <th className="w-44 px-4 py-3 text-right">เลือก / จัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedSubActivityBudgetItems.map((item, index) => {
+                          const isSelected = selectedAllocationItem?.id === item.id
+                            && selectedDisbursementItem?.id === item.id;
+
+                          return (
+                            <tr
+                              key={item.id}
+                              onClick={() => selectSubActivityBudgetItem(item)}
+                              className={`cursor-pointer text-slate-700 transition ${isSelected ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+                            >
+                              <td className="whitespace-nowrap px-4 py-3 font-medium text-indigo-800">
+                                {item.activity_sequence_label ?? item.sequence_label ?? index + 1}
+                              </td>
+                              <td className="px-4 py-3 font-medium text-slate-900">
+                                {item.item_name}
+                                {isSelected ? <span className="ml-2 text-xs font-semibold text-indigo-700">เลือกแล้ว</span> : null}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-900">
+                                {formatBudgetAmount(item.amount.planned_budget_amount)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      selectSubActivityBudgetItem(item);
+                                    }}
+                                    className={`inline-flex h-9 items-center justify-center rounded-md border p-2 transition ${isSelected ? 'border-indigo-300 bg-indigo-100 text-indigo-700' : 'border-indigo-200 bg-white text-indigo-600 hover:bg-indigo-50'}`}
+                                    aria-label={`เลือก ${item.item_name} สำหรับกรอกข้อมูลงบประมาณ`}
+                                    aria-pressed={isSelected}
+                                    title="เลือกสำหรับกรอกข้อมูล"
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      startEdit(item);
+                                    }}
+                                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50 hover:text-sky-700"
+                                    aria-label={`แก้ไข ${item.item_name}`}
+                                    title="แก้ไขรายการ"
+                                  >
+                                    <Edit3 className="h-4 w-4" aria-hidden="true" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setDeleteTarget(item);
+                                    }}
+                                    className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white p-2 text-red-600 transition hover:bg-red-50"
+                                    aria-label={`ลบ ${item.item_name}`}
+                                    title="ลบรายการ"
+                                  >
+                                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="px-4 py-5 text-sm text-slate-500">ยังไม่มีรายการงบประมาณภายใต้กิจกรรมย่อยนี้</p>
+                )}
+              </div>
+            ) : null}
           </section>
 
           <div className="mt-4 border-b border-slate-200" role="tablist" aria-label="ส่วนงานรายการงบประมาณ">
@@ -2414,6 +2550,59 @@ export function BudgetUtilizationItemsPage() {
 
           {activeTab === 'transactions' ? (
           <div className="mt-4 space-y-4" role="tabpanel">
+          <div className="grid gap-4 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setIsAllocationEntryOpen(true)}
+              className="group rounded-md border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300"
+            >
+              <span className="flex items-start gap-4">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 transition group-hover:bg-amber-200">
+                  <Settings2 className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-bold text-slate-950">จัดสรรงวด</span>
+                  <span className="mt-1 block text-sm text-slate-600">เลือกรายการ งวด วันที่ และจำนวนเงินจัดสรร</span>
+                  <span className="mt-3 block truncate text-xs font-semibold text-amber-800">
+                    {selectedAllocationItem ? `รายการที่เลือก: ${getBudgetItemSearchLabel(selectedAllocationItem)}` : 'กดเพื่อเลือกรายการและกรอกข้อมูล'}
+                  </span>
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBudgetDataEntryOpen(true)}
+              className="group rounded-md border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-300"
+            >
+              <span className="flex items-start gap-4">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-sky-100 text-sky-700 transition group-hover:bg-sky-200">
+                  <WalletCards className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-bold text-slate-950">กรอกข้อมูลงบประมาณ</span>
+                  <span className="mt-1 block text-sm text-slate-600">เลือกส่วนกลางกรมฯ ภายในกรม ภายในกอง ผูกพัน หรือเบิก-จ่าย</span>
+                  <span className="mt-3 block truncate text-xs font-semibold text-sky-800">
+                    {selectedDisbursementItem ? `รายการที่เลือก: ${getBudgetItemSearchLabel(selectedDisbursementItem)}` : 'กดเพื่อเลือกรายการและกรอกข้อมูล'}
+                  </span>
+                </span>
+              </span>
+            </button>
+          </div>
+
+          {isAllocationEntryOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="allocation-entry-title">
+            <button type="button" className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => setIsAllocationEntryOpen(false)} aria-label="ปิดหน้าต่างจัดสรรงวด" />
+            <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
+                <div>
+                  <h2 id="allocation-entry-title" className="text-lg font-bold text-slate-950">จัดสรรงวด</h2>
+                  <p className="mt-1 text-xs text-slate-600">เลือกรายการงบประมาณและบันทึกยอดจัดสรรตามงวด</p>
+                </div>
+                <button type="button" onClick={() => setIsAllocationEntryOpen(false)} disabled={saving} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-amber-200 bg-white text-slate-600 transition hover:bg-amber-100 disabled:opacity-50" aria-label="ปิด">
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           <section className="flex min-w-0 flex-col rounded-md border border-amber-200 bg-amber-50/40 p-4 shadow-sm">
             <div className="mb-3 space-y-3">
               <div>
@@ -2521,6 +2710,10 @@ export function BudgetUtilizationItemsPage() {
               </button>
             </div>
           </section>
+              </div>
+            </div>
+          </div>
+          ) : null}
 
           {false ? (
           <>
@@ -2816,6 +3009,22 @@ export function BudgetUtilizationItemsPage() {
           </>
           ) : null}
 
+          {isBudgetDataEntryOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="budget-data-entry-title">
+            <button type="button" className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => setIsBudgetDataEntryOpen(false)} aria-label="ปิดหน้าต่างกรอกข้อมูลงบประมาณ" />
+            <div className="relative flex max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-sky-200 bg-sky-50 px-4 py-3 sm:px-6">
+                <div className="min-w-0">
+                  <h2 id="budget-data-entry-title" className="text-lg font-bold text-slate-950">กรอกข้อมูลงบประมาณ</h2>
+                  <p className="mt-1 truncate text-xs text-slate-600">
+                    {selectedDisbursementItem ? getBudgetItemSearchLabel(selectedDisbursementItem) : 'ค้นหาและเลือกรายการที่ต้องการกรอกข้อมูล'}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setIsBudgetDataEntryOpen(false)} disabled={saving} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-white text-slate-600 transition hover:bg-sky-100 disabled:opacity-50" aria-label="ปิด">
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6">
           <div className="min-w-0 space-y-4">
             <section className="rounded-md border border-sky-200 bg-sky-50/40 p-4 shadow-sm">
               <div className="mb-3">
@@ -2872,6 +3081,10 @@ export function BudgetUtilizationItemsPage() {
             </div>
           ) : null}
           </div>
+              </div>
+            </div>
+          </div>
+          ) : null}
           </div>
           ) : null}
         </div>
