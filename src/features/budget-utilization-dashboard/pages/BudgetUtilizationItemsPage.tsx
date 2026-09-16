@@ -494,9 +494,9 @@ function SelectedDisbursementItemDetails({
         </h3>
       </div>
 
-      <div className="mb-3 flex flex-col justify-between gap-2 rounded-md border border-lime-200 bg-lime-50 px-3 py-2.5 sm:flex-row sm:items-center">
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-lime-200 bg-lime-50 px-3 py-2.5">
         <p className="text-xs font-semibold text-lime-950">ยอดสุทธิงบประมาณ {fiscalYear} หลังโอนเปลี่ยนแปลง (1)</p>
-        <p className="text-right text-base font-bold tabular-nums text-lime-950">{formatBudgetAmount(amount.net_budget_after_transfer_amount)}</p>
+        <p className="text-base font-bold tabular-nums text-lime-950">{formatBudgetAmount(amount.net_budget_after_transfer_amount)}</p>
       </div>
 
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -1364,7 +1364,6 @@ export function BudgetUtilizationItemsPage() {
       setSaving(true);
       setCellEditError(null);
       const activeReportPeriodId = await ensureReportPeriodId();
-      const shouldResetTransactionSelection = disbursementForm.itemId === cellEdit.item.id;
 
       if (cellEdit.tranche) {
         const selectedTranche = summary?.allocationTranches.find((tranche) => tranche.id === cellEdit.tranche?.key);
@@ -1425,12 +1424,8 @@ export function BudgetUtilizationItemsPage() {
           if (departmentTransferForm.itemId === refreshedItem.id) applySelectedDepartmentTransferItemValue(refreshedItem);
           if (divisionTransferForm.itemId === refreshedItem.id) applySelectedDivisionTransferItemValue(refreshedItem);
           if (commitmentForm.itemId === refreshedItem.id) applySelectedCommitmentItemValue(refreshedItem);
-          if (!shouldResetTransactionSelection && disbursementForm.itemId === refreshedItem.id) applySelectedDisbursementItemValue(refreshedItem);
+          if (disbursementForm.itemId === refreshedItem.id) applySelectedDisbursementItemValue(refreshedItem);
         }
-      }
-      if (shouldResetTransactionSelection) {
-        setTransactionItemSearch('');
-        setDisbursementForm(initialDisbursementForm);
       }
     } catch (saveError) {
       setCellEditError(getSafeUserErrorMessage(saveError, 'ไม่สามารถบันทึกตัวเลขรายการได้'));
@@ -1537,9 +1532,11 @@ export function BudgetUtilizationItemsPage() {
         allocationForm.allocationDate || null,
         allocationForm.documentNumber,
       );
-      await loadData(activeReportPeriodId);
-      setAllocationItemSearch('');
-      setAllocationForm((current) => ({ ...initialAllocationForm, trancheKey: current.trancheKey }));
+      const refreshedSummary = await loadData(activeReportPeriodId);
+      const refreshedItem = refreshedSummary?.items.find((item) => item.id === selectedAllocationItem.id) ?? null;
+      if (refreshedItem) {
+        applySelectedAllocationItemValue(refreshedItem, allocationForm.trancheKey);
+      }
     } catch (saveError) {
       setError(getSafeUserErrorMessage(saveError, 'ไม่สามารถบันทึกจัดสรรงวดได้'));
     } finally {
