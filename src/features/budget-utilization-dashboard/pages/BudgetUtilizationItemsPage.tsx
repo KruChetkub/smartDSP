@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { AlertCircle, Calculator, CheckCircle2, Edit3, Plus, RefreshCw, Save, Search, Settings2, Table2, Trash2, WalletCards, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui/PageHeader';
@@ -7,7 +7,7 @@ import { useAuditPageAccess } from '../../../hooks/useAuditPageAccess';
 import { useAuthStore } from '../../../stores/auth.store';
 import { canManageBudgetItems, createBudgetItem, deleteBudgetItem, getBudgetDashboardSummary, listBudgetReportPeriods, saveBudgetAllocationTrancheDefinitions, saveBudgetItemAllocation, updateBudgetItem, updateBudgetItemAmounts, updateBudgetItemDetails } from '../services/budgetUtilization.service';
 import { buildHierarchyRollupMap, formatBudgetAmount, getNetAllocationTotal, normalizeAmount, percent, summarizeBudgetItems, toNumber } from '../utils/budgetUtilizationCalculations';
-import type { BudgetUtilizationDashboardSummary, BudgetUtilizationItemInput, BudgetUtilizationItemWithAmount, BudgetUtilizationReportPeriod, BudgetUtilizationRowType, BudgetUtilizationTransactionType } from '../types/budgetUtilization.types';
+import type { BudgetUtilizationAmount, BudgetUtilizationDashboardSummary, BudgetUtilizationItemInput, BudgetUtilizationItemWithAmount, BudgetUtilizationReportPeriod, BudgetUtilizationRowType, BudgetUtilizationTransactionType } from '../types/budgetUtilization.types';
 import { getSafeUserErrorMessage } from '../../../utils/errorHandling';
 
 type ItemForm = {
@@ -398,6 +398,152 @@ function formatSignedBudgetAmount(value: number, sign: AmountDisplaySign) {
   return `${sign}${formatBudgetAmount(Math.abs(value))}`;
 }
 
+function getBudgetItemSearchLabel(item: BudgetUtilizationItemWithAmount) {
+  return `${item.sequence_label ? `${item.sequence_label} ` : ''}${item.item_name}`;
+}
+
+function SelectedDisbursementItemDetails({
+  item,
+  amount,
+  fiscalYear,
+  canEdit,
+  onEditAmount,
+}: {
+  item: BudgetUtilizationItemWithAmount;
+  amount: BudgetUtilizationAmount;
+  fiscalYear: number | string;
+  canEdit: boolean;
+  onEditAmount: (field: EditableAmountField, label: string, value: number) => void;
+}) {
+  type DetailMetric = {
+    label: string;
+    value: string;
+    field?: EditableAmountField;
+    editLabel?: string;
+    rawValue?: number;
+  };
+
+  const groups: Array<{
+    title: string;
+    headerClassName: string;
+    bodyClassName: string;
+    metrics: DetailMetric[];
+  }> = [
+    {
+      title: 'ส่วนกลางกรมฯ',
+      headerClassName: 'bg-cyan-700 text-white',
+      bodyClassName: 'border-cyan-200 bg-cyan-50',
+      metrics: [
+        { label: 'รับโอน (2)', value: formatSignedBudgetAmount(amount.central_transfer_in_amount, '+'), field: 'centralTransferInAmount', editLabel: 'ส่วนกลางกรมฯ รับโอน', rawValue: item.amount.central_transfer_in_amount },
+        { label: 'โอนออก (3)', value: formatSignedBudgetAmount(amount.central_transfer_out_amount, '-'), field: 'centralTransferOutAmount', editLabel: 'ส่วนกลางกรมฯ โอนออก', rawValue: item.amount.central_transfer_out_amount },
+      ],
+    },
+    {
+      title: 'ภายในกรม',
+      headerClassName: 'bg-blue-700 text-white',
+      bodyClassName: 'border-blue-200 bg-blue-50',
+      metrics: [
+        { label: 'ขอเพิ่ม', value: formatSignedBudgetAmount(amount.department_request_increase_amount, '+'), field: 'departmentRequestIncreaseAmount', editLabel: 'ภายในกรม ขอเพิ่ม', rawValue: item.amount.department_request_increase_amount },
+        { label: 'โอนออก', value: formatSignedBudgetAmount(amount.department_transfer_out_amount, '-'), field: 'departmentTransferOutAmount', editLabel: 'ภายในกรม โอนออก', rawValue: item.amount.department_transfer_out_amount },
+      ],
+    },
+    {
+      title: 'ภายในกอง',
+      headerClassName: 'bg-orange-600 text-white',
+      bodyClassName: 'border-orange-200 bg-orange-50',
+      metrics: [
+        { label: 'รับโอน (2)', value: formatSignedBudgetAmount(amount.division_transfer_in_amount, '+'), field: 'divisionTransferInAmount', editLabel: 'ภายในกอง รับโอน', rawValue: item.amount.division_transfer_in_amount },
+        { label: 'โอนออก (3)', value: formatSignedBudgetAmount(amount.division_transfer_out_amount, '-'), field: 'divisionTransferOutAmount', editLabel: 'ภายในกอง โอนออก', rawValue: item.amount.division_transfer_out_amount },
+      ],
+    },
+    {
+      title: 'ผูกพัน',
+      headerClassName: 'bg-purple-700 text-white',
+      bodyClassName: 'border-purple-200 bg-purple-50',
+      metrics: [
+        { label: 'มี PO (4)', value: formatBudgetAmount(amount.committed_po_amount), field: 'committedPoAmount', editLabel: 'ผูกพัน มี PO', rawValue: item.amount.committed_po_amount },
+        { label: 'ไม่มี PO (5)', value: formatBudgetAmount(amount.committed_without_po_amount), field: 'committedWithoutPoAmount', editLabel: 'ผูกพัน ไม่มี PO', rawValue: item.amount.committed_without_po_amount },
+        { label: 'รวม (6)', value: formatBudgetAmount(amount.committed_total_amount) },
+      ],
+    },
+    {
+      title: 'เบิก-จ่าย',
+      headerClassName: 'bg-emerald-700 text-white',
+      bodyClassName: 'border-emerald-200 bg-emerald-50',
+      metrics: [
+        { label: 'เบิกจ่ายทั่วไป (7)', value: formatBudgetAmount(amount.disbursed_general_amount), field: 'disbursedGeneralAmount', editLabel: 'เบิกจ่ายทั่วไป', rawValue: item.amount.disbursed_general_amount },
+        { label: 'เงินยืมราชการ (8)', value: formatBudgetAmount(amount.disbursed_advance_amount), field: 'disbursedAdvanceAmount', editLabel: 'เงินยืมราชการ', rawValue: item.amount.disbursed_advance_amount },
+        { label: 'รวม (9)', value: formatBudgetAmount(amount.disbursed_total_amount) },
+      ],
+    },
+  ];
+
+  const summaryMetrics = [
+    { label: 'รวม (10) = (6) + (9)', value: formatBudgetAmount(amount.utilization_total_amount), className: 'border-yellow-200 bg-yellow-50' },
+    { label: 'คงเหลือ (11) = (1) - (10)', value: formatBudgetAmount(amount.remaining_amount), className: 'border-slate-200 bg-slate-50' },
+    { label: 'เบิกจ่ายตามจัดสรร ร้อยละ (12)', value: `${formatBudgetAmount(amount.disbursement_rate ?? 0)}%`, className: 'border-teal-200 bg-teal-50' },
+    { label: 'เบิกจ่ายตามจัดสรร ร้อยละ (รวม PO)', value: `${formatBudgetAmount(amount.utilization_with_po_rate ?? 0)}%`, className: 'border-sky-200 bg-sky-50' },
+  ];
+
+  return (
+    <section className="min-w-0 rounded-md border border-slate-200 bg-white p-3 shadow-sm" aria-live="polite">
+      <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <p className="text-xs font-semibold text-slate-500">รายละเอียดรายการงบประมาณที่เลือก</p>
+        <h3 className="mt-1 text-sm font-bold text-slate-950">
+          {item.sequence_label ? `${item.sequence_label} ` : ''}{item.item_name}
+        </h3>
+      </div>
+
+      <div className="mb-3 flex flex-col justify-between gap-2 rounded-md border border-lime-200 bg-lime-50 px-3 py-2.5 sm:flex-row sm:items-center">
+        <p className="text-xs font-semibold text-lime-950">ยอดสุทธิงบประมาณ {fiscalYear} หลังโอนเปลี่ยนแปลง (1)</p>
+        <p className="text-right text-base font-bold tabular-nums text-lime-950">{formatBudgetAmount(amount.net_budget_after_transfer_amount)}</p>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {groups.map((group) => (
+          <section key={group.title} className={`flex flex-col overflow-hidden rounded-md border ${group.bodyClassName}`}>
+            <h4 className={`px-2 py-2 text-center text-xs font-bold ${group.headerClassName}`}>{group.title}</h4>
+            <div className={`grid flex-1 divide-x divide-slate-200 ${group.metrics.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {group.metrics.map((metric) => {
+                const isEditable = canEdit && metric.field && metric.editLabel && typeof metric.rawValue === 'number';
+                const content = (
+                  <>
+                    {isEditable ? <Edit3 className="absolute right-1.5 top-1.5 h-3 w-3 text-slate-500" aria-hidden="true" /> : null}
+                    <span className="text-[10px] font-semibold leading-4 text-slate-700">{metric.label}</span>
+                    <strong className="break-all text-xs font-bold tabular-nums text-slate-950">{metric.value}</strong>
+                  </>
+                );
+
+                return isEditable ? (
+                  <button
+                    key={metric.label}
+                    type="button"
+                    onClick={() => onEditAmount(metric.field!, metric.editLabel!, metric.rawValue!)}
+                    className="relative flex min-w-0 flex-col justify-between gap-2 px-1.5 py-2.5 text-center transition hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-400"
+                    title={`แก้ไข${metric.editLabel}`}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div key={metric.label} className="relative flex min-w-0 flex-col justify-between gap-2 px-1.5 py-2.5 text-center">
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+        {summaryMetrics.map((metric) => (
+          <div key={metric.label} className={`flex min-h-20 flex-col justify-between rounded-md border p-3 ${metric.className}`}>
+            <p className="text-xs font-medium leading-5 text-slate-700">{metric.label}</p>
+            <p className="mt-2 text-right text-sm font-bold tabular-nums text-slate-950">{metric.value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function getDocumentNumber(item: BudgetUtilizationItemWithAmount, referenceKey: string) {
   return item.transactionReferences?.find((reference) => reference.reference_key === referenceKey)?.document_number ?? '';
 }
@@ -507,6 +653,9 @@ export function BudgetUtilizationItemsPage() {
   const [departmentTransferForm, setDepartmentTransferForm] = useState<DepartmentTransferForm>(initialDepartmentTransferForm);
   const [divisionTransferForm, setDivisionTransferForm] = useState<DivisionTransferForm>(initialDivisionTransferForm);
   const [commitmentForm, setCommitmentForm] = useState<CommitmentForm>(initialCommitmentForm);
+  const [allocationItemSearch, setAllocationItemSearch] = useState('');
+  const [transactionItemSearch, setTransactionItemSearch] = useState('');
+  const selectedDisbursementDetailsRef = useRef<HTMLDivElement | null>(null);
   const [trancheDefinitions, setTrancheDefinitions] = useState<TrancheDefinition[]>(initialTrancheDefinitions);
   const [trancheDrafts, setTrancheDrafts] = useState<TrancheDefinition[]>(initialTrancheDefinitions);
   const [trancheForm, setTrancheForm] = useState<TrancheForm>(emptyTrancheForm);
@@ -578,6 +727,10 @@ export function BudgetUtilizationItemsPage() {
     setMajorProjectForm(emptyMajorProjectForm);
     setSubActivityForm(emptySubActivityForm);
     setChildForm(emptyChildForm);
+    setAllocationItemSearch('');
+    setTransactionItemSearch('');
+    setAllocationForm(initialAllocationForm);
+    setDisbursementForm(initialDisbursementForm);
     setEditModalItem(null);
     setCellEdit(null);
     void loadData(nextReportPeriodId);
@@ -886,6 +1039,54 @@ export function BudgetUtilizationItemsPage() {
     });
   }, [allBudgetItems, hierarchyItems]);
 
+  const transactionItemSearchResults = useMemo(() => {
+    const normalizedQuery = transactionItemSearch.trim().toLocaleLowerCase('th-TH');
+    const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+
+    return budgetLineItems
+      .map((item) => {
+        const label = getBudgetItemSearchLabel(item);
+        const normalizedLabel = label.toLocaleLowerCase('th-TH');
+        const normalizedSequence = (item.sequence_label ?? '').toLocaleLowerCase('th-TH');
+        const normalizedName = item.item_name.toLocaleLowerCase('th-TH');
+        const matches = terms.length === 0 || terms.every((term) => normalizedLabel.includes(term));
+        const score = normalizedQuery.length === 0
+          ? 4
+          : normalizedSequence.startsWith(normalizedQuery)
+            ? 0
+            : normalizedName.startsWith(normalizedQuery)
+              ? 1
+              : normalizedLabel.includes(normalizedQuery) ? 2 : 3;
+        return { item, label, matches, score };
+      })
+      .filter((entry) => entry.matches)
+      .sort((a, b) => a.score - b.score || a.label.localeCompare(b.label, 'th', { numeric: true }));
+  }, [budgetLineItems, transactionItemSearch]);
+
+  const allocationItemSearchResults = useMemo(() => {
+    const normalizedQuery = allocationItemSearch.trim().toLocaleLowerCase('th-TH');
+    const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+
+    return budgetLineItems
+      .map((item) => {
+        const label = getBudgetItemSearchLabel(item);
+        const normalizedLabel = label.toLocaleLowerCase('th-TH');
+        const normalizedSequence = (item.sequence_label ?? '').toLocaleLowerCase('th-TH');
+        const normalizedName = item.item_name.toLocaleLowerCase('th-TH');
+        const matches = terms.length === 0 || terms.every((term) => normalizedLabel.includes(term));
+        const score = normalizedQuery.length === 0
+          ? 4
+          : normalizedSequence.startsWith(normalizedQuery)
+            ? 0
+            : normalizedName.startsWith(normalizedQuery)
+              ? 1
+              : normalizedLabel.includes(normalizedQuery) ? 2 : 3;
+        return { item, label, matches, score };
+      })
+      .filter((entry) => entry.matches)
+      .sort((a, b) => a.score - b.score || a.label.localeCompare(b.label, 'th', { numeric: true }));
+  }, [allocationItemSearch, budgetLineItems]);
+
   const selectedAllocationItem = useMemo(() => {
     return budgetLineItems.find((item) => item.id === allocationForm.itemId) ?? null;
   }, [allocationForm.itemId, budgetLineItems]);
@@ -893,6 +1094,33 @@ export function BudgetUtilizationItemsPage() {
   const selectedDisbursementItem = useMemo(() => {
     return budgetLineItems.find((item) => item.id === disbursementForm.itemId) ?? null;
   }, [budgetLineItems, disbursementForm.itemId]);
+
+  const selectedDisbursementAmount = useMemo(() => {
+    if (!selectedDisbursementItem) return null;
+    return rollupMap.get(selectedDisbursementItem.id) ?? normalizeAmount(selectedDisbursementItem.amount);
+  }, [rollupMap, selectedDisbursementItem]);
+
+  const selectTransactionBudgetItem = (item: BudgetUtilizationItemWithAmount) => {
+    setTransactionItemSearch(getBudgetItemSearchLabel(item));
+    setDisbursementForm((current) => ({ ...current, itemId: item.id }));
+    applySelectedDisbursementItemValue(item);
+  };
+
+  const selectAllocationBudgetItem = (item: BudgetUtilizationItemWithAmount) => {
+    setAllocationItemSearch(getBudgetItemSearchLabel(item));
+    setAllocationForm((current) => ({ ...current, itemId: item.id }));
+    applySelectedAllocationItemValue(item, allocationForm.trancheKey);
+  };
+
+  useEffect(() => {
+    if (!disbursementForm.itemId) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      selectedDisbursementDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [disbursementForm.itemId]);
 
   const selectedCentralTransferItem = useMemo(() => {
     return budgetLineItems.find((item) => item.id === centralTransferForm.itemId) ?? null;
@@ -1136,6 +1364,7 @@ export function BudgetUtilizationItemsPage() {
       setSaving(true);
       setCellEditError(null);
       const activeReportPeriodId = await ensureReportPeriodId();
+      const shouldResetTransactionSelection = disbursementForm.itemId === cellEdit.item.id;
 
       if (cellEdit.tranche) {
         const selectedTranche = summary?.allocationTranches.find((tranche) => tranche.id === cellEdit.tranche?.key);
@@ -1187,11 +1416,21 @@ export function BudgetUtilizationItemsPage() {
 
       setCellEdit(null);
       const refreshedSummary = await loadData(activeReportPeriodId);
-      if (editModalItem && refreshedSummary) {
-        const refreshedItem = refreshedSummary.items.find((item) => item.id === editModalItem.id);
+      if (refreshedSummary) {
+        const refreshedItem = refreshedSummary.items.find((item) => item.id === cellEdit.item.id) ?? null;
         if (refreshedItem) {
-          setEditModalItem(refreshedItem);
+          if (editModalItem?.id === refreshedItem.id) setEditModalItem(refreshedItem);
+          if (allocationForm.itemId === refreshedItem.id) applySelectedAllocationItemValue(refreshedItem, allocationForm.trancheKey);
+          if (centralTransferForm.itemId === refreshedItem.id) applySelectedCentralTransferItemValue(refreshedItem);
+          if (departmentTransferForm.itemId === refreshedItem.id) applySelectedDepartmentTransferItemValue(refreshedItem);
+          if (divisionTransferForm.itemId === refreshedItem.id) applySelectedDivisionTransferItemValue(refreshedItem);
+          if (commitmentForm.itemId === refreshedItem.id) applySelectedCommitmentItemValue(refreshedItem);
+          if (!shouldResetTransactionSelection && disbursementForm.itemId === refreshedItem.id) applySelectedDisbursementItemValue(refreshedItem);
         }
+      }
+      if (shouldResetTransactionSelection) {
+        setTransactionItemSearch('');
+        setDisbursementForm(initialDisbursementForm);
       }
     } catch (saveError) {
       setCellEditError(getSafeUserErrorMessage(saveError, 'ไม่สามารถบันทึกตัวเลขรายการได้'));
@@ -1299,6 +1538,8 @@ export function BudgetUtilizationItemsPage() {
         allocationForm.documentNumber,
       );
       await loadData(activeReportPeriodId);
+      setAllocationItemSearch('');
+      setAllocationForm((current) => ({ ...initialAllocationForm, trancheKey: current.trancheKey }));
     } catch (saveError) {
       setError(getSafeUserErrorMessage(saveError, 'ไม่สามารถบันทึกจัดสรรงวดได้'));
     } finally {
@@ -2175,7 +2416,7 @@ export function BudgetUtilizationItemsPage() {
           </div>
 
           {activeTab === 'transactions' ? (
-          <div className="mt-4 grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" role="tabpanel">
+          <div className="mt-4 space-y-4" role="tabpanel">
           <section className="flex min-w-0 flex-col rounded-md border border-amber-200 bg-amber-50/40 p-4 shadow-sm">
             <div className="mb-3 space-y-3">
               <div>
@@ -2196,26 +2437,44 @@ export function BudgetUtilizationItemsPage() {
               </button>
             </div>
             <div className="flex flex-1 flex-col gap-3">
-              <label className="block">
-                <span className="text-xs font-semibold text-slate-600">รายการงบประมาณ</span>
-                <select
-                  value={allocationForm.itemId}
-                  onChange={(event) => {
-                    const nextItem = budgetLineItems.find((item) => item.id === event.target.value) ?? null;
-                    setAllocationForm((current) => ({ ...current, itemId: event.target.value }));
-                    applySelectedAllocationItemValue(nextItem, allocationForm.trancheKey);
-                  }}
-                  className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
-                >
-                  <option value="">เลือกรายการงบประมาณ</option>
-                  {budgetLineItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.sequence_label ? `${item.sequence_label} ` : ''}
-                      {item.item_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div>
+                <label htmlFor="allocation-budget-item-search" className="text-xs font-semibold text-slate-600">รายการงบประมาณ</label>
+                <div className="relative mt-1">
+                  <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
+                  <input
+                    id="allocation-budget-item-search"
+                    type="search"
+                    value={allocationItemSearch}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setAllocationItemSearch(nextValue);
+                      if (selectedAllocationItem && nextValue !== getBudgetItemSearchLabel(selectedAllocationItem)) {
+                        setAllocationForm((current) => ({ ...current, itemId: '' }));
+                        applySelectedAllocationItemValue(null, allocationForm.trancheKey);
+                      }
+                    }}
+                    aria-controls="allocation-budget-item-results"
+                    className="h-10 w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                    placeholder="ค้นหาเลขลำดับหรือชื่อรายการ"
+                  />
+                </div>
+                <div id="allocation-budget-item-results" role="listbox" aria-label="ผลการค้นหารายการงบประมาณสำหรับจัดสรรงวด" className="mt-2 max-h-60 overflow-y-auto rounded-md border border-amber-200 bg-white p-1">
+                  {allocationItemSearchResults.length > 0 ? allocationItemSearchResults.map(({ item, label }) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedAllocationItem?.id === item.id}
+                      onClick={() => selectAllocationBudgetItem(item)}
+                      className={`block w-full rounded px-2.5 py-2 text-left text-xs transition ${selectedAllocationItem?.id === item.id ? 'bg-amber-100 font-semibold text-amber-950' : 'text-slate-700 hover:bg-amber-50'}`}
+                    >
+                      {label}
+                    </button>
+                  )) : (
+                    <p className="px-3 py-4 text-center text-xs text-slate-500">ไม่พบรายการที่ใกล้เคียง</p>
+                  )}
+                </div>
+              </div>
               <label className="block">
                 <span className="text-xs font-semibold text-slate-600">งวด</span>
                 <select
@@ -2266,6 +2525,8 @@ export function BudgetUtilizationItemsPage() {
             </div>
           </section>
 
+          {false ? (
+          <>
           <section className="flex min-w-0 flex-col rounded-md border border-cyan-200 bg-cyan-50/40 p-4 shadow-sm">
             <div className="mb-3">
               <h2 className="text-base font-semibold text-slate-950">ส่วนกลางกรมฯ</h2>
@@ -2498,7 +2759,7 @@ export function BudgetUtilizationItemsPage() {
             </div>
           </section>
 
-          <section className="flex min-w-0 flex-col rounded-md border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm">
+          <section className={`flex min-w-0 flex-col rounded-md border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm ${selectedDisbursementItem ? '2xl:col-span-2' : ''}`}>
             <div className="mb-3">
               <h2 className="text-base font-semibold text-slate-950">เบิก-จ่าย</h2>
               <p className="mt-1 text-xs text-slate-500">บันทึกยอดเบิกจ่ายทั่วไปและเงินยืมราชการ ระบบจะรวมยอดไปแสดงในช่องเบิกจ่ายรวม</p>
@@ -2555,6 +2816,65 @@ export function BudgetUtilizationItemsPage() {
               </button>
             </div>
           </section>
+          </>
+          ) : null}
+
+          <div className="min-w-0 space-y-4">
+            <section className="rounded-md border border-sky-200 bg-sky-50/40 p-4 shadow-sm">
+              <div className="mb-3">
+                <h2 className="text-base font-semibold text-slate-950">เลือกรายการงบประมาณเพื่อกรอกข้อมูล</h2>
+                <p className="mt-1 text-xs text-slate-500">ค้นหาด้วยเลขลำดับหรือชื่อรายการ แล้วกดช่องข้อมูลด้านล่างที่ต้องการเพิ่มหรือแก้ไข</p>
+              </div>
+              <div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={transactionItemSearch}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setTransactionItemSearch(nextValue);
+                      if (selectedDisbursementItem && nextValue !== getBudgetItemSearchLabel(selectedDisbursementItem)) {
+                        setDisbursementForm(initialDisbursementForm);
+                        applySelectedDisbursementItemValue(null);
+                      }
+                    }}
+                    aria-controls="budget-transaction-search-results"
+                    className="h-11 w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    placeholder="พิมพ์เลขลำดับหรือชื่อรายการงบประมาณ"
+                  />
+                </div>
+                <div id="budget-transaction-search-results" role="listbox" aria-label="ผลการค้นหารายการงบประมาณ" className="mt-2 max-h-72 overflow-y-auto rounded-md border border-sky-200 bg-white p-1">
+                  {transactionItemSearchResults.length > 0 ? transactionItemSearchResults.map(({ item, label }) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedDisbursementItem?.id === item.id}
+                      onClick={() => selectTransactionBudgetItem(item)}
+                      className={`block w-full rounded px-3 py-2 text-left text-sm transition ${selectedDisbursementItem?.id === item.id ? 'bg-sky-100 font-semibold text-sky-900' : 'text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      {label}
+                    </button>
+                  )) : (
+                    <p className="px-3 py-4 text-center text-sm text-slate-500">ไม่พบรายการที่ใกล้เคียง</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+          {selectedDisbursementItem && selectedDisbursementAmount ? (
+            <div ref={selectedDisbursementDetailsRef} className="scroll-mt-24 min-w-0">
+              <SelectedDisbursementItemDetails
+                item={selectedDisbursementItem}
+                amount={selectedDisbursementAmount}
+                fiscalYear={displayFiscalYear}
+                canEdit={canManage}
+                onEditAmount={(field, label, value) => openAmountCellEdit(null, selectedDisbursementItem, field, label, value)}
+              />
+            </div>
+          ) : null}
+          </div>
           </div>
           ) : null}
         </div>
