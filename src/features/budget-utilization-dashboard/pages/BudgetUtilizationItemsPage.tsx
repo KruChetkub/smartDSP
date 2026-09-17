@@ -2404,17 +2404,30 @@ export function BudgetUtilizationItemsPage() {
                       ))}
                     </select>
                     {selectedSubActivity ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSubActivityForm(formFromItem(selectedSubActivity));
-                        }}
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-sky-300 bg-sky-50 px-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
-                        title="แก้ไขกิจกรรมย่อยที่เลือก"
-                      >
-                        <Edit3 className="h-4 w-4" aria-hidden="true" />
-                        แก้ไขกิจกรรมย่อย
-                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubActivityForm(formFromItem(selectedSubActivity));
+                          }}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-sky-300 bg-sky-50 px-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
+                          title="แก้ไขชื่อและวงเงินกิจกรรมย่อย"
+                        >
+                          <Edit3 className="h-4 w-4" aria-hidden="true" />
+                          แก้ไขกิจกรรมย่อย
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            startEdit(selectedSubActivity);
+                          }}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100"
+                          title="แก้ไขรายละเอียดงบประมาณและการคำนวณทั้งหมด"
+                        >
+                          <Calculator className="h-4 w-4" aria-hidden="true" />
+                          แก้ไขรายละเอียดงบประมาณ
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -2458,14 +2471,51 @@ export function BudgetUtilizationItemsPage() {
             {isOperationsCategorySelected && selectedSubActivity ? (
               <div className="mt-4 overflow-hidden rounded-md border border-indigo-200 bg-white">
                 <div className="flex flex-col gap-2 border-b border-indigo-100 bg-indigo-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">รายการงบประมาณภายใต้กิจกรรมย่อยที่เลือก</h3>
-                    <p className="mt-1 text-xs text-slate-600">{selectedSubActivity.item_name}</p>
-                    <p className="mt-1 text-xs text-indigo-700">กดรายการเพื่อเลือกสำหรับจัดสรรงวดและกรอกข้อมูลงบประมาณ</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-md bg-indigo-700 px-2 py-0.5 text-xs font-bold text-white">
+                        กิจกรรมย่อย {selectedSubActivity.activity_sequence_label ?? selectedSubActivity.sequence_label ?? ''}
+                      </span>
+                      <h3 className="text-sm font-bold text-slate-900 truncate">{selectedSubActivity.item_name}</h3>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-600">
+                      วงเงินกิจกรรมย่อย: <strong className="font-semibold text-slate-900">{formatBudgetAmount(selectedSubActivity.amount.planned_budget_amount)}</strong> บาท
+                      {selectedSubActivityBudgetItems.length > 0 ? ` · รวมรายการย่อย ${selectedSubActivityBudgetItems.length} รายการ` : ' · เป็นรายการงบประมาณโดยตรง (ไม่มีรายการย่อย)'}
+                    </p>
                   </div>
-                  <span className="w-fit rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
-                    {selectedSubActivityBudgetItems.length} รายการ
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => selectSubActivityBudgetItem(selectedSubActivity)}
+                      className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition ${
+                        selectedAllocationItem?.id === selectedSubActivity.id && selectedDisbursementItem?.id === selectedSubActivity.id
+                          ? 'border-indigo-400 bg-indigo-100 text-indigo-800'
+                          : 'border-indigo-300 bg-white text-indigo-700 hover:bg-indigo-50'
+                      }`}
+                      title="เลือกกิจกรรมย่อยนี้สำหรับกรอก/บันทึกข้อมูลงบประมาณ"
+                    >
+                      <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      {selectedAllocationItem?.id === selectedSubActivity.id && selectedDisbursementItem?.id === selectedSubActivity.id ? 'เลือกกิจกรรมย่อยนี้แล้ว' : 'เลือกบันทึกงบประมาณ'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(selectedSubActivity)}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-sky-700"
+                      title="แก้ไขรายละเอียดและยอดเงินของกิจกรรมย่อยนี้"
+                    >
+                      <Edit3 className="h-4 w-4" aria-hidden="true" />
+                      แก้ไขรายละเอียดงบประมาณ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(selectedSubActivity)}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-white px-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      title="ลบกิจกรรมย่อยนี้"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      ลบ
+                    </button>
+                  </div>
                 </div>
                 {selectedSubActivityBudgetItems.length > 0 ? (
                   <div className="overflow-x-auto">
@@ -2547,7 +2597,19 @@ export function BudgetUtilizationItemsPage() {
                     </table>
                   </div>
                 ) : (
-                  <p className="px-4 py-5 text-sm text-slate-500">ยังไม่มีรายการงบประมาณภายใต้กิจกรรมย่อยนี้</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-indigo-100 bg-slate-50/80 p-4 text-xs text-slate-600">
+                    <p>
+                      กิจกรรมย่อยนี้ยังไม่มีรายการกิจกรรมย่อยเพิ่มเติม — สามารถกดปุ่ม <strong className="text-slate-800">"เลือกบันทึกงบประมาณ"</strong> หรือ <strong className="text-slate-800">"แก้ไขรายละเอียดงบประมาณ"</strong> ด้านบน เพื่อจัดการข้อมูลและผลการคำนวณของกิจกรรมย่อยนี้ได้โดยตรง
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(selectedSubActivity)}
+                      className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-indigo-700 hover:text-indigo-900"
+                    >
+                      <Calculator className="h-4 w-4" aria-hidden="true" />
+                      เปิดแก้ไขรายละเอียดงบประมาณ
+                    </button>
+                  </div>
                 )}
               </div>
             ) : null}
