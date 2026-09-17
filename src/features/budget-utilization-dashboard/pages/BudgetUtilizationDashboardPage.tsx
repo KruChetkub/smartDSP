@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, BarChart3, ChevronDown, ChevronRight, Coins, DatabaseZap, RefreshCw, TrendingUp, WalletCards } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { PageHeader } from '../../../components/ui/PageHeader';
@@ -678,6 +678,7 @@ export function BudgetUtilizationDashboardPage() {
   const [hasPlanBarClicked, setHasPlanBarClicked] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const projectTableRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = async (reportPeriodId?: string | null) => {
     try {
@@ -1017,6 +1018,9 @@ export function BudgetUtilizationDashboardPage() {
       setShowBottomTable(false);
     } else if (key === 'project') {
       setShowBottomTable(true);
+      setTimeout(() => {
+        projectTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } else {
       setSelectedRawPlanCategoryKey(key);
       setShowProjectBar(false);
@@ -1348,7 +1352,7 @@ export function BudgetUtilizationDashboardPage() {
                 </div>
 
                 {showBottomTable ? (
-                  <div className="mt-5 overflow-hidden rounded-md border border-slate-200 bg-slate-50 shadow-sm">
+                  <div ref={projectTableRef} className="mt-5 overflow-hidden rounded-md border border-slate-200 bg-slate-50 shadow-sm scroll-mt-6">
                     <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                       <h3 className="text-sm font-semibold text-slate-950">
                         รายการงบโครงการ (รวม)
