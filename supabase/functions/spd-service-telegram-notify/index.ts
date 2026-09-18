@@ -22,6 +22,7 @@ type Profile = {
   user_id: string;
   full_name: string;
   role: string;
+  status: string;
 };
 
 function isUuid(value: string) {
@@ -230,15 +231,8 @@ serve(async (req) => {
 
     const [{ data: ticket, error: ticketError }, { data: profile, error: profileError }] = await Promise.all([
       adminClient.from('spd_service_tickets').select('*').eq('id', ticketId).single(),
-      adminClient.from('profiles').select('user_id, full_name, role').eq('user_id', user.id).single(),
+      adminClient.from('profiles').select('user_id, full_name, role, status').eq('user_id', user.id).single(),
     ]);
-
-    if (ticketError || !ticket) {
-      return new Response(JSON.stringify({ sent: false, reason: 'ticket_not_found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     if (profileError || !profile) {
       return new Response(JSON.stringify({ sent: false, reason: 'profile_not_found' }), {
@@ -248,6 +242,20 @@ serve(async (req) => {
     }
 
     const userProfile = profile as Profile;
+    if (userProfile.status !== 'active') {
+      return new Response(JSON.stringify({ sent: false, reason: 'account_inactive' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (ticketError || !ticket) {
+      return new Response(JSON.stringify({ sent: false, reason: 'ticket_not_found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const serviceTicket = ticket as Ticket;
     const canNotify =
       serviceTicket.requester_id === user.id ||

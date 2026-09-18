@@ -10,6 +10,7 @@ with expected(function_signature, anon_can_execute) as (
     ('public.create_training_record_with_details(uuid,text,text,text,text,date,integer,text,text,text,text,text)', false),
     ('public.current_user_role()', false),
     ('public.delete_user(uuid)', false),
+    ('public.delete_user_secure(uuid)', false),
     ('public.generate_spd_service_ticket_no(text,date)', false),
     ('public.get_public_visit_stats()', true),
     ('public.get_spd_service_ai_chatgpt_booking_calendar(date,date)', false),

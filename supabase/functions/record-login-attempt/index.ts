@@ -129,7 +129,7 @@ serve(async (req) => {
   }
 
   let user: { id: string; email?: string | null } | null = null;
-  let profile: { user_id: string; full_name: string | null; role: string | null } | null = null;
+  let profile: { user_id: string; full_name: string | null; role: string | null; status: string } | null = null;
 
   if (success) {
     const authorization = req.headers.get('authorization') || '';
@@ -163,13 +163,16 @@ serve(async (req) => {
       );
     }
 
-    const { data: profileData } = await adminClient
+    const { data: profileData, error: profileError } = await adminClient
       .from('profiles')
-      .select('user_id, full_name, role')
+      .select('user_id, full_name, role, status')
       .eq('user_id', user.id)
       .maybeSingle();
 
     profile = profileData ?? null;
+    if (profileError || !profile || profile.status !== 'active') {
+      return jsonResponse({ logged: false, reason: 'account_inactive' }, 403);
+    }
   }
 
   const { error: loginHistoryError } = await adminClient.from('login_history').insert({

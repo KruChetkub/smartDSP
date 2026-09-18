@@ -79,6 +79,8 @@ async function signInThroughGateway(email: string, password: string) {
         ? 'มีการเข้าสู่ระบบถี่เกินไป กรุณารอสักครู่แล้วลองใหม่'
         : result.reason === 'invalid_credentials'
           ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+          : result.reason === 'account_inactive'
+            ? 'บัญชีนี้ถูกระงับหรือปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ'
           : result.reason === 'invalid_payload'
             ? 'ข้อมูลเข้าสู่ระบบไม่ถูกต้อง'
             : 'ไม่สามารถตรวจสอบความปลอดภัยในการเข้าสู่ระบบได้ กรุณาลองใหม่ภายหลัง';

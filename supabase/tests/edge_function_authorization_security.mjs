@@ -2,8 +2,8 @@
  * Live Edge Function authorization/security contract for plan lines 117-121.
  *
  * Baseline checks need only VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
- * Full role/ownership checks additionally require a dedicated, active,
- * non-privileged test account. Never use a real user's credentials here.
+ * Full role/ownership/status checks additionally require dedicated active and
+ * inactive test accounts. Never use a real user's credentials here.
  */
 
 const supabaseUrl = (
@@ -14,6 +14,9 @@ const anonKey =
 const expiredAccessToken = process.env.EDGE_TEST_EXPIRED_ACCESS_TOKEN ?? '';
 const testUserEmail = process.env.EDGE_TEST_USER_EMAIL ?? '';
 const testUserPassword = process.env.EDGE_TEST_USER_PASSWORD ?? '';
+const inactiveAccessTokenFromEnv = process.env.EDGE_TEST_INACTIVE_ACCESS_TOKEN ?? '';
+const inactiveUserEmail = process.env.EDGE_TEST_INACTIVE_USER_EMAIL ?? '';
+const inactiveUserPassword = process.env.EDGE_TEST_INACTIVE_USER_PASSWORD ?? '';
 const foreignTicketId = process.env.EDGE_TEST_FOREIGN_TICKET_ID ?? '';
 const foreignReservationId = process.env.EDGE_TEST_FOREIGN_RESERVATION_ID ?? '';
 
@@ -151,6 +154,40 @@ if (testUserEmail && testUserPassword) {
   }
 }
 
+let inactiveAccessToken = inactiveAccessTokenFromEnv;
+if (!inactiveAccessToken && inactiveUserEmail && inactiveUserPassword) {
+  const inactiveSignInResponse = await fetch(
+    `${supabaseUrl}/auth/v1/token?grant_type=password`,
+    {
+      method: 'POST',
+      headers: { apikey: anonKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ email: inactiveUserEmail, password: inactiveUserPassword }),
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  const inactiveSignInBody = await inactiveSignInResponse.json().catch(() => ({}));
+  inactiveAccessToken = inactiveSignInBody.access_token ?? '';
+}
+
+if (inactiveAccessToken) {
+  for (const [functionName, body] of protectedRequests) {
+    const inactiveResponse = await invoke(functionName, {
+      token: inactiveAccessToken,
+      body,
+    });
+    record(`inactive account: ${functionName}`, [403], inactiveResponse.status);
+  }
+}
+
+let inactiveGatewayChecked = false;
+if (inactiveUserEmail && inactiveUserPassword) {
+  const gatewayResponse = await invoke('login-gateway', {
+    body: { email: inactiveUserEmail, password: inactiveUserPassword },
+  });
+  record('login gateway rejects inactive account', [403], gatewayResponse.status);
+  inactiveGatewayChecked = true;
+}
+
 const failures = results.filter((result) => !result.passed);
 if (failures.length > 0) {
   throw new Error(`${failures.length} Edge Function security check(s) failed.`);
@@ -167,12 +204,20 @@ if (!nonPrivilegedToken) {
 if (!foreignTicketId || !foreignReservationId) {
   console.warn('SKIP: set both foreign record IDs to certify ticket and reservation ownership checks.');
 }
+if (!inactiveAccessToken) {
+  console.warn('SKIP: set EDGE_TEST_INACTIVE_ACCESS_TOKEN or inactive test credentials to certify inactive-account rejection.');
+}
+if (!inactiveGatewayChecked) {
+  console.warn('SKIP: set EDGE_TEST_INACTIVE_USER_EMAIL and EDGE_TEST_INACTIVE_USER_PASSWORD to certify login-gateway rejection.');
+}
 
 if (
   !expiredAccessToken ||
   !nonPrivilegedToken ||
   !foreignTicketId ||
-  !foreignReservationId
+  !foreignReservationId ||
+  !inactiveAccessToken ||
+  !inactiveGatewayChecked
 ) {
   process.exitCode = 2;
 } else {

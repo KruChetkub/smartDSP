@@ -189,11 +189,15 @@ serve(async (req) => {
     );
   }
 
-  const { data: profile } = await adminClient
+  const { data: profile, error: profileError } = await adminClient
     .from('profiles')
-    .select('user_id, full_name, role')
+    .select('user_id, full_name, role, status')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (profileError || !profile || profile.status !== 'active') {
+    return jsonResponse({ logged: false, reason: 'account_inactive' }, 403);
+  }
 
   const targetType = stringOrNull(body.targetType, 100) || module;
   const targetId = stringOrNull(body.targetId, 500);

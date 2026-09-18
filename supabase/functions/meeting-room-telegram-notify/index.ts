@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 type TelegramSetting = { setting_key: string; setting_value: string | null; is_active: boolean };
-type Profile = { user_id: string; full_name: string; role: string };
+type Profile = { user_id: string; full_name: string; role: string; status: string };
 type MeetingRoomReservation = {
   id: string;
   reservation_date: string;
@@ -156,16 +156,21 @@ serve(async (req) => {
 
     const [{ data: reservation, error: reservationError }, { data: profile, error: profileError }] = await Promise.all([
       adminClient.from('meeting_room_reservations').select('*').eq('id', reservationId).single(),
-      adminClient.from('profiles').select('user_id, full_name, role').eq('user_id', user.id).single(),
+      adminClient.from('profiles').select('user_id, full_name, role, status').eq('user_id', user.id).single(),
     ]);
-    if (reservationError || !reservation) {
-      return jsonResponse({ sent: false, reason: 'reservation_not_found' }, 404);
-    }
     if (profileError || !profile) {
       return jsonResponse({ sent: false, reason: 'profile_not_found' }, 403);
     }
 
     const userProfile = profile as Profile;
+    if (userProfile.status !== 'active') {
+      return jsonResponse({ sent: false, reason: 'account_inactive' }, 403);
+    }
+
+    if (reservationError || !reservation) {
+      return jsonResponse({ sent: false, reason: 'reservation_not_found' }, 404);
+    }
+
     const meetingReservation = reservation as MeetingRoomReservation;
     const canNotify = meetingReservation.created_by === user.id || userProfile.role === 'super_admin' || userProfile.role === 'admin';
     if (!canNotify) {

@@ -69,8 +69,7 @@ export async function updateUserStatus(userId: string, status: ProfileStatus) {
 }
 
 export async function deleteUser(userId: string) {
-  // We call the RPC function we'll define in Supabase
-  const { error } = await (supabase as any).rpc('delete_user', { target_user_id: userId });
+  const { error } = await (supabase as any).rpc('delete_user_secure', { target_user_id: userId });
 
   if (error) throw error;
 }

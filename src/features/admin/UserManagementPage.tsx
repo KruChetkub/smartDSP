@@ -695,14 +695,6 @@ export function UserManagementPage() {
     setUpdating(deleteModal.userId);
     try {
       await deleteUser(deleteModal.userId);
-      void recordAuditLog({
-        module: 'user_management',
-        action: 'user_delete',
-        route: '/admin/users',
-        targetType: 'user',
-        targetId: deleteModal.userId,
-        metadata: { target_name: deleteModal.fullName },
-      });
       setDeleteModal({ isOpen: false, userId: '', fullName: '' });
       await loadUsers();
     } catch (err) {

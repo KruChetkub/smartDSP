@@ -286,6 +286,39 @@ serve(async (req) => {
       email: authData.user.email,
     };
 
+    const { data: authenticatedProfile, error: authenticatedProfileError } = await adminClient
+      .from('profiles')
+      .select('status')
+      .eq('user_id', authenticatedUser.id)
+      .maybeSingle();
+
+    if (authenticatedProfileError) {
+      throw new Error('profile_lookup_failed');
+    }
+
+    if (!authenticatedProfile) {
+      await recordAttempt(adminClient, {
+        success: false,
+        email,
+        ipAddress,
+        userAgent,
+        errorMessage: 'profile_not_found',
+      });
+      return jsonResponse({ reason: 'account_inactive' }, 403);
+    }
+
+    if (authenticatedProfile.status !== 'active') {
+      await recordAttempt(adminClient, {
+        success: false,
+        email,
+        ipAddress,
+        userAgent,
+        user: authenticatedUser,
+        errorMessage: 'account_inactive',
+      });
+      return jsonResponse({ reason: 'account_inactive' }, 403);
+    }
+
     await recordAttempt(adminClient, {
       success: true,
       email,
