@@ -4,6 +4,26 @@
 
 begin;
 
+-- RLS expressions execute as the authenticated caller. These helpers expose
+-- only the caller's own role/permission result, so authenticated must be able
+-- to execute both the public invoker wrapper and its private implementation.
+grant usage on schema private to authenticated;
+
+revoke all on function public.current_user_role() from public, anon;
+revoke all on function public.has_permission(text) from public, anon;
+revoke all on function public.is_privileged_role(public.user_role[]) from public, anon;
+revoke all on function public.spd_assistant_match_role(public.user_role[]) from public, anon;
+
+grant execute on function public.current_user_role() to authenticated;
+grant execute on function public.has_permission(text) to authenticated;
+grant execute on function public.is_privileged_role(public.user_role[]) to authenticated;
+grant execute on function public.spd_assistant_match_role(public.user_role[]) to authenticated;
+
+grant execute on function private.current_user_role_impl() to authenticated;
+grant execute on function private.has_permission_impl(text) to authenticated;
+grant execute on function private.is_privileged_role_impl(public.user_role[]) to authenticated;
+grant execute on function private.spd_assistant_match_role_impl(public.user_role[]) to authenticated;
+
 do $block$
 declare
   relation record;

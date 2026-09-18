@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, BookOpen, BookOpenText, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, Coins, Database, ExternalLink, FileText, GraduationCap, Headphones, KeyRound, LogOut, Megaphone, Monitor, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, BookOpen, BookOpenText, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, Coins, Database, ExternalLink, FileText, GraduationCap, Headphones, KeyRound, LogOut, Megaphone, Monitor, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useAuditPageAccess } from '../../hooks/useAuditPageAccess';
@@ -56,6 +56,16 @@ const coreSystems: PortalCard[] = [
     roles: ['super_admin', 'admin', 'executive', 'hr', 'personnel'],
     accent: 'from-teal-700 to-amber-500',
     meta: 'Budget Intelligence',
+  },
+  {
+    title: 'KPI DSP Monitoring',
+    shortTitle: 'ติดตามตัวชี้วัด SDGs และ Health',
+    description: 'ระบบติดตามผลการดำเนินงานตัวชี้วัดของกองยุทธศาสตร์และแผนงาน',
+    to: '/kpi',
+    icon: Activity,
+    roles: ['super_admin', 'admin', 'executive', 'hr', 'personnel'],
+    accent: 'from-blue-700 to-emerald-500',
+    meta: 'KPI Intelligence',
   },
 ];
 

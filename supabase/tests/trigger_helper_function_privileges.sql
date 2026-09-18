@@ -8,16 +8,16 @@ declare
   function_oid oid;
   unexpected_anon_routines text;
   restricted_helpers constant text[] := array[
-    'public.current_user_role()',
-    'public.has_permission(text)',
     'public.increment_audit_log_retry_count(uuid[])',
-    'public.is_privileged_role(public.user_role[])',
-    'public.spd_assistant_match_role(public.user_role[])',
     'public.spd_assistant_normalize_route(text)'
   ];
   authenticated_runtime_helpers constant text[] := array[
     'public.calculate_generation_from_birth_date(date)',
-    'public.smartdsp_survey_is_open(public.smartdsp_surveys)'
+    'public.smartdsp_survey_is_open(public.smartdsp_surveys)',
+    'public.current_user_role()',
+    'public.has_permission(text)',
+    'public.is_privileged_role(public.user_role[])',
+    'public.spd_assistant_match_role(public.user_role[])'
   ];
   allowed_anon_routines constant text[] := array[
     'public.get_public_visit_stats()',

@@ -36,7 +36,7 @@ import { useAuthStore } from '../../stores/auth.store';
 import type { UserRole, ProfileStatus } from '../../types/roles';
 import { roleLabels } from '../../types/roles';
 import { getSafeUserErrorMessage } from '../../utils/errorHandling';
-import { BUDGET_ITEMS_MANAGE_PERMISSION } from '../../constants/permissions';
+import { BUDGET_ITEMS_MANAGE_PERMISSION, KPIDSP_INDICATORS_MANAGE_PERMISSION } from '../../constants/permissions';
 
 type CreateFormState = {
   employee_code: string;
@@ -518,6 +518,7 @@ export function UserManagementPage() {
   useAuditPageAccess({ module: 'user_management', action: 'user_management_access', route: '/admin/users' });
   const [users, setUsers] = useState<UserManagementProfile[]>([]);
   const [financeOfficerUserIds, setFinanceOfficerUserIds] = useState<Set<string>>(new Set());
+  const [kpiReporterUserIds, setKpiReporterUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -591,19 +592,49 @@ export function UserManagementPage() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const [data, financeOfficerIds] = await Promise.all([
+      const [data, financeOfficerIds, kpiReporterIds] = await Promise.all([
         listAllUsers(),
         currentRole === 'super_admin'
           ? listUserPermissionAssignments(BUDGET_ITEMS_MANAGE_PERMISSION)
           : Promise.resolve([]),
+        currentRole === 'super_admin'
+          ? listUserPermissionAssignments(KPIDSP_INDICATORS_MANAGE_PERMISSION)
+          : Promise.resolve([]),
       ]);
       setUsers(data);
       setFinanceOfficerUserIds(new Set(financeOfficerIds));
+      setKpiReporterUserIds(new Set(kpiReporterIds));
       setError(null);
     } catch (err) {
       setError(getSafeUserErrorMessage(err, 'ไม่สามารถโหลดข้อมูลผู้ใช้งานได้'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKpiReporterToggle = async (user: UserManagementProfile, enabled: boolean) => {
+    if (!currentUser || currentRole !== 'super_admin') return;
+    if (user.role !== 'personnel') {
+      setError('สิทธิ์ผู้บันทึกรายงานตัวชี้วัดกำหนดให้ผู้ใช้ Role Personnel เท่านั้น');
+      return;
+    }
+    setUpdating(user.user_id);
+    try {
+      await setUserPermission(user.user_id, KPIDSP_INDICATORS_MANAGE_PERMISSION, enabled);
+      void recordAuditLog({
+        module: 'user_management',
+        action: enabled ? 'kpidsp_reporter_permission_granted' : 'kpidsp_reporter_permission_revoked',
+        route: '/admin/users',
+        targetType: 'user',
+        targetId: user.user_id,
+        afterData: { supplemental_permission: enabled ? KPIDSP_INDICATORS_MANAGE_PERMISSION : null },
+        metadata: { target_email: user.email, target_name: user.full_name },
+      });
+      await loadUsers();
+    } catch (err) {
+      setError(getSafeUserErrorMessage(err, 'ไม่สามารถกำหนสิทธิ์ผู้บันทึกรายงานตัวชี้วัดได้'));
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -1271,6 +1302,18 @@ export function UserManagementPage() {
                           <option value="finance_officer">เจ้าหน้าที่การเงิน</option>
                         ) : null}
                       </select>
+                      {currentRole === 'super_admin' ? (
+                        <label className={`mt-2 flex items-center gap-2 text-xs font-medium ${u.role === 'personnel' ? 'text-slate-700' : 'text-slate-400'}`}>
+                          <input
+                            type="checkbox"
+                            checked={kpiReporterUserIds.has(u.user_id)}
+                            onChange={(event) => void handleKpiReporterToggle(u, event.target.checked)}
+                            disabled={u.role !== 'personnel' || updating === u.user_id}
+                            className="h-4 w-4 rounded border-slate-300 text-brand-600"
+                          />
+                          ผู้บันทึกรายงานตัวชี้วัด
+                        </label>
+                      ) : null}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1.5">

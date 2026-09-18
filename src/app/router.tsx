@@ -45,7 +45,16 @@ import { SpdServiceTelegramSettingsPage } from '../features/spd-service/SpdServi
 import { SpdServiceTicketListPage } from '../features/spd-service/SpdServiceTicketListPage';
 import { ForbiddenPage } from '../features/system/ForbiddenPage';
 import { NotFoundPage } from '../features/system/NotFoundPage';
-import { BUDGET_ITEMS_MANAGE_PERMISSION } from '../constants/permissions';
+import { BUDGET_ITEMS_MANAGE_PERMISSION, KPIDSP_INDICATORS_MANAGE_PERMISSION } from '../constants/permissions';
+import { KpiDspLayout } from '../features/kpidsp/KpiDspLayout';
+import DashboardOverview from '../features/kpidsp/src/pages/DashboardOverview/index';
+import Dashboard from '../features/kpidsp/src/pages/Dashboard';
+import DashboardHealth from '../features/kpidsp/src/pages/DashboardHealth/index';
+import DataEntry from '../features/kpidsp/src/pages/DataEntry';
+import DataEntryHealth from '../features/kpidsp/src/pages/DataEntryHealth';
+import ManageSDGs from '../features/kpidsp/src/pages/ManageSDGs';
+import ManageHealth from '../features/kpidsp/src/pages/ManageHealth';
+import KPIGroup from '../features/kpidsp/src/pages/KPIGroup';
 
 export const router = createBrowserRouter([
   {
@@ -67,6 +76,43 @@ export const router = createBrowserRouter([
   {
     path: '/privacy-notice',
     element: <PrivacyNoticePage />,
+  },
+  {
+    element: <KpiDspLayout />,
+    children: [
+      {
+        path: '/kpi',
+        element: <DashboardOverview />,
+      },
+      {
+        path: '/kpi/sdgs',
+        element: <Dashboard categoryFilter="SDGs" />,
+      },
+      {
+        path: '/kpi/health',
+        element: <DashboardHealth />,
+      },
+      {
+        path: '/kpi/group/:groupId',
+        element: <KPIGroup />,
+      },
+      {
+        path: '/kpidsp',
+        element: <Navigate to="/kpi" replace />,
+      },
+      {
+        path: '/kpidsp/sdgs',
+        element: <Navigate to="/kpi/sdgs" replace />,
+      },
+      {
+        path: '/kpidsp/health',
+        element: <Navigate to="/kpi/health" replace />,
+      },
+      {
+        path: '/kpidsp/group/:groupId',
+        element: <KPIGroup />,
+      },
+    ],
   },
   {
     element: <GuestRoute />,
@@ -165,6 +211,61 @@ export const router = createBrowserRouter([
           {
             path: '/settings',
             element: <AccountSettingsPage />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    element: (
+      <ProtectedRoute
+        allowedRoles={['super_admin', 'admin']}
+        allowedPermissions={[KPIDSP_INDICATORS_MANAGE_PERMISSION]}
+      />
+    ),
+    children: [
+      {
+        element: <KpiDspLayout />,
+        children: [
+          {
+            path: '/kpi/entry/sdgs',
+            element: <DataEntry />,
+          },
+          {
+            path: '/kpi/entry/health',
+            element: <DataEntryHealth />,
+          },
+          {
+            path: '/kpi/manage/sdgs',
+            element: <ManageSDGs />,
+          },
+          {
+            path: '/kpi/manage/health',
+            element: <ManageHealth />,
+          },
+          {
+            path: '/kpi/entry',
+            element: <Navigate to="/kpi/entry/sdgs" replace />,
+          },
+          {
+            path: '/kpi/entry-health',
+            element: <Navigate to="/kpi/entry/health" replace />,
+          },
+          {
+            path: '/kpidsp/entry/sdgs',
+            element: <Navigate to="/kpi/entry/sdgs" replace />,
+          },
+          {
+            path: '/kpidsp/entry/health',
+            element: <Navigate to="/kpi/entry/health" replace />,
+          },
+          {
+            path: '/kpidsp/manage/sdgs',
+            element: <Navigate to="/kpi/manage/sdgs" replace />,
+          },
+          {
+            path: '/kpidsp/manage/health',
+            element: <Navigate to="/kpi/manage/health" replace />,
           },
         ],
       },
