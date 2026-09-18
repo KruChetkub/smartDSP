@@ -204,10 +204,6 @@ export const router = createBrowserRouter([
             path: '/personnel/:id',
             element: <IndividualProfilePage />,
           },
-          {
-            path: '/reports',
-            element: <ReportsPage />,
-          },
         ],
       },
     ],
@@ -293,6 +289,10 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
+          {
+            path: '/reports',
+            element: <ReportsPage />,
+          },
           {
             path: '/site-manager',
             element: <SiteManagerPage />,

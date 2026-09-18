@@ -92,7 +92,7 @@ const navItems: NavItem[] = [
     to: '/reports',
     label: 'Reports',
     icon: Activity,
-    roles: ['super_admin', 'admin', 'executive', 'hr'],
+    roles: ['super_admin', 'admin'],
   },
   {
     to: '/admin/users',
