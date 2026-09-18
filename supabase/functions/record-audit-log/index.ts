@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { readJsonObject, RequestBodyError } from '../_shared/request-security.ts';
 import { consumeRateLimit, rateLimitHeaders, type RateLimitClient } from '../_shared/rate-limit.ts';
+import { privateNoStoreHeaders } from '../_shared/response-security.ts';
 
 const defaultAllowedOrigins = [
   'https://smart-dsp.vercel.app',
@@ -9,6 +10,7 @@ const defaultAllowedOrigins = [
 ];
 
 const baseCorsHeaders = {
+  ...privateNoStoreHeaders,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
@@ -113,7 +115,7 @@ serve(async (req) => {
   if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
     return new Response(JSON.stringify({ logged: false, reason: 'origin_not_allowed' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json', Vary: 'Origin' },
+      headers: { ...privateNoStoreHeaders, 'Content-Type': 'application/json', Vary: 'Origin' },
     });
   }
 

@@ -1,12 +1,14 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { consumeRateLimit, rateLimitHeaders, type RateLimitClient } from '../_shared/rate-limit.ts';
+import { privateNoStoreHeaders } from '../_shared/response-security.ts';
 
 const exportedLogRetentionMs = 72 * 60 * 60 * 1000;
 const exportBatchSize = 1000;
 const statusUpdateChunkSize = 100;
 
 const corsHeaders = {
+  ...privateNoStoreHeaders,
   'Access-Control-Allow-Origin': Deno.env.get('SMARTDSP_ALLOWED_ORIGIN') ?? 'https://smart-dsp.vercel.app',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-audit-export-secret',

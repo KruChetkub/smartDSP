@@ -191,6 +191,15 @@ export async function listTrainingRecords(filters: TrainingRecordFilters = {}): 
     });
 }
 
+export async function listTrainingReportRecords(year?: number): Promise<TrainingRecordRow[]> {
+  const { data } = await runSupabaseQuery(
+    supabase.rpc('list_training_report_records', { p_year: year ?? null }),
+    'โหลดข้อมูลรายงานการอบรม',
+  );
+
+  return data || [];
+}
+
 export async function createTrainingRecord(input: CreateTrainingRecordInput): Promise<TrainingRecord> {
   const month = getMonthFromDate(input.date);
 

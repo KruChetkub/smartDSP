@@ -7,7 +7,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { listTrainingRecords, type TrainingRecordRow } from '../../services/training.service';
+import { listTrainingReportRecords, type TrainingRecordRow } from '../../services/training.service';
 import { formatThaiDate, getCurrentThaiFiscalYear } from '../../utils/thaiDate';
 import { getSafeUserErrorMessage } from '../../utils/errorHandling';
 
@@ -29,7 +29,7 @@ export function ReportsPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const data = await listTrainingRecords({ year });
+        const data = await listTrainingReportRecords(year);
         setRecords(data);
       } catch (err) {
         setError(getSafeUserErrorMessage(err, 'ไม่สามารถโหลดข้อมูลรายงานได้'));
@@ -84,7 +84,7 @@ export function ReportsPage() {
   const exportExcel = async (scope: 'all' | 'year') => {
     const targetRecords = scope === 'year'
       ? filteredRecords
-      : (await listTrainingRecords()).filter(matchesSearch);
+      : (await listTrainingReportRecords()).filter(matchesSearch);
 
     if (targetRecords.length === 0) return;
 

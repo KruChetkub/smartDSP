@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 
 const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
 const globalHeaders = config.headers?.find((entry) => entry.source === '/(.*)')?.headers ?? [];
@@ -60,6 +60,21 @@ for (const name of ['script-src', 'style-src', 'style-src-elem']) {
 
 if (headerMap.get('access-control-allow-origin') !== 'https://smart-dsp.vercel.app') {
   throw new Error('Static site responses must allow only the SmartDSP production origin.');
+}
+
+if (!headerMap.get('cache-control')?.split(',').map((value) => value.trim()).includes('no-store')) {
+  throw new Error('Static site responses must use Cache-Control: no-store.');
+}
+
+const functionsDirectory = new URL('../supabase/functions/', import.meta.url);
+const functionDirectories = (await readdir(functionsDirectory, { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'));
+
+for (const directory of functionDirectories) {
+  const source = await readFile(new URL(`../supabase/functions/${directory.name}/index.ts`, import.meta.url), 'utf8');
+  if (!source.includes('privateNoStoreHeaders')) {
+    throw new Error(`Supabase Edge Function ${directory.name} must apply privateNoStoreHeaders.`);
+  }
 }
 
 console.log('Security header configuration passed.');

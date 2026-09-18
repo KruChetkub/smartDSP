@@ -1169,6 +1169,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      list_training_report_records: {
+        Args: { p_year?: number | null };
+        Returns: Array<TrainingRecord & {
+          personnel_name: string;
+          employee_code: string | null;
+          position: string;
+          department: string;
+          work_group: string;
+          certificate_name: string | null;
+          certificate_link: string | null;
+        }>;
+      };
       list_mfa_enforcement_users: {
         Args: Record<string, never>;
         Returns: Array<{

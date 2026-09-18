@@ -39,6 +39,22 @@ export default defineConfig({
         globPatterns: ['**/*.{html,js,css}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+          {
+            urlPattern: ({ url }) => (
+              url.hostname.endsWith('.supabase.co')
+              && ['/auth/v1/', '/rest/v1/', '/functions/v1/'].some((path) => url.pathname.startsWith(path))
+            ),
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+        ],
       },
     }),
   ],
