@@ -109,7 +109,7 @@ export function StrategicPolicyHomePage() {
       <header className="relative isolate overflow-hidden border-b border-emerald-200 bg-[url('/SmartDSP.png')] bg-cover bg-[position:center_82%] bg-no-repeat sm:bg-[length:100%_auto]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.90)_28%,rgba(255,255,255,0.90)_72%,rgba(255,255,255,0.72)_100%)]" aria-hidden="true" />
         <div className="relative mx-auto grid min-h-32 max-w-[1600px] gap-3 px-4 py-2 sm:min-h-36 sm:px-6 lg:grid-cols-[10rem_minmax(0,1fr)_10rem] lg:items-center lg:px-8">
-          <div className="flex items-center gap-3 lg:block">
+          <div className="flex items-center justify-center lg:block">
             <div className="inline-flex rounded-md border border-emerald-100 bg-white/70 p-1.5 shadow-sm backdrop-blur-sm lg:block lg:w-fit lg:mx-auto">
               <img src="/DDC_0.png" alt="ตราสัญลักษณ์กรมควบคุมโรค" className="h-[4.5rem] w-auto object-contain lg:h-[5.5rem]" />
             </div>
@@ -187,21 +187,35 @@ export function StrategicPolicyHomePage() {
                   </div>
                 ) : null}
                 {isPrimaryPlanSection ? (
-                  <div
-                    className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 lg:justify-center"
-                    style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch' }}
-                  >
+                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 w-full">
                     {items.map((item) => {
                       const Icon = item.icon;
                       const cardContent = <>
                         <div className="flex w-full justify-center">
-                          {item.logoUrl ? <img src={item.logoUrl} alt={`โลโก้ ${item.title}`} className="h-20 w-20 rounded-full border-2 border-white bg-white object-contain p-0.5 shadow-md ring-1 ring-slate-200" /> : <span className={`flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full text-white ${item.color}`}><Icon className="h-8 w-8" aria-hidden="true" /></span>}
+                          {item.logoUrl ? (
+                            <img
+                              src={item.logoUrl}
+                              alt={`โลโก้ ${item.title}`}
+                              className="h-20 w-20 sm:h-22 sm:w-22 rounded-full border-2 border-white bg-white object-contain p-1 shadow-md ring-1 ring-slate-200/80 transition-transform duration-200 group-hover:scale-105"
+                            />
+                          ) : (
+                            <span className={`flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-full text-white shadow-md transition-transform duration-200 group-hover:scale-105 ${item.color}`}>
+                              <Icon className="h-9 w-9" aria-hidden="true" />
+                            </span>
+                          )}
                         </div>
-                        <h3 className="mt-3 line-clamp-3 text-xs font-bold leading-4 text-slate-950">{item.title}</h3>
-                        <p className="mt-1 line-clamp-3 text-[10px] leading-4 text-slate-600">{item.description}</p>
-                        <span className="mt-auto inline-flex items-center justify-center gap-1 pt-3 text-[10px] font-semibold text-emerald-700">{item.actionLabel}<ArrowRight className="h-3 w-3 transition group-hover:translate-x-1" /></span>
+                        <h3 className="mt-3.5 line-clamp-3 text-xs sm:text-sm font-bold leading-snug text-slate-950 transition-colors group-hover:text-emerald-800">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1.5 line-clamp-3 text-[11px] sm:text-xs leading-relaxed text-slate-600">
+                          {item.description}
+                        </p>
+                        <span className="mt-auto inline-flex items-center justify-center gap-1.5 pt-3.5 text-xs font-semibold text-emerald-700 transition-colors group-hover:text-emerald-800">
+                          {item.actionLabel}
+                          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+                        </span>
                       </>;
-                      const cardClassName = 'group flex min-h-52 w-[78%] shrink-0 snap-start flex-col items-center rounded-md border border-white/80 bg-white/55 p-4 text-center shadow-sm backdrop-blur-[2px] transition hover:border-emerald-200 hover:bg-white/75 sm:w-[42%] md:w-[30%] lg:w-[calc((100%_-_5.25rem)/8)]';
+                      const cardClassName = 'group flex min-h-[16rem] w-full flex-col items-center justify-between rounded-xl border border-white/90 bg-white/75 p-4 sm:p-5 text-center shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-md';
                       return item.pdfUrl
                         ? <a key={item.id} href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className={cardClassName}>{cardContent}</a>
                         : <Link key={item.id} to={item.to} className={cardClassName}>{cardContent}</Link>;
