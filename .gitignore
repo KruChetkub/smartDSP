@@ -19,6 +19,7 @@ tailwind.config.d.ts
 graphify-out/
 scratch/
 Mmd/
+reportsmartdsp/
 .vercel
 .env*.local
 README.md

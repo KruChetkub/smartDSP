@@ -55,8 +55,13 @@ import DataEntryHealth from '../features/kpidsp/src/pages/DataEntryHealth';
 import ManageSDGs from '../features/kpidsp/src/pages/ManageSDGs';
 import ManageHealth from '../features/kpidsp/src/pages/ManageHealth';
 import KPIGroup from '../features/kpidsp/src/pages/KPIGroup';
+import NasRedirectPage from '../features/portal/NasRedirectPage';
 
 export const router = createBrowserRouter([
+  {
+    path: '/nas',
+    element: <NasRedirectPage />,
+  },
   {
     path: '/',
     element: <StrategicPolicyHomePage />,

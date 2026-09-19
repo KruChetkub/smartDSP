@@ -2,7 +2,22 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const securityHeaders = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://asntgpqwccsbdzppnjxk.supabase.co; font-src 'self' data:; connect-src 'self' https://asntgpqwccsbdzppnjxk.supabase.co wss://asntgpqwccsbdzppnjxk.supabase.co; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+};
+
 export default defineConfig({
+  server: {
+    headers: securityHeaders,
+  },
+  preview: {
+    headers: securityHeaders,
+  },
   plugins: [
     react(),
     VitePWA({

@@ -20,6 +20,7 @@ type PortalCard = {
   description: string;
   to?: string;
   externalUrl?: string;
+  openInNewTab?: boolean;
   icon: typeof GraduationCap;
   roles: UserRole[];
   accent: string;
@@ -110,7 +111,8 @@ const externalSystems: PortalCard[] = [
     title: 'ระบบจัดเก็บข้อมูลกลาง กยผ.',
     shortTitle: 'คลังข้อมูลกลาง กยผ.',
     description: 'คลังข้อมูลกลาง กยผ.เวลาสำหรับเข้าใช้งาน 08.30 - 16.30 น.(NAS)',
-    externalUrl: 'http://10.100.43.2:5000/#/signin',
+    to: '/nas',
+    openInNewTab: true,
     icon: Database,
     roles: ['super_admin', 'admin', 'executive', 'hr', 'personnel'],
     accent: 'from-slate-700 to-emerald-500',
@@ -529,7 +531,7 @@ export function PortalPage() {
         <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {visibleSystems.map((system) => {
             const Icon = system.icon;
-            const isExternal = Boolean(system.externalUrl);
+            const isExternal = Boolean(system.externalUrl) || Boolean(system.openInNewTab);
             const cardClassName = "group flex min-h-28 flex-col items-center rounded-md p-2 text-center transition hover:bg-slate-100 sm:min-h-0 sm:items-stretch sm:rounded-2xl sm:border sm:border-slate-200 sm:bg-white sm:p-5 sm:text-left sm:shadow-sm sm:hover:-translate-y-0.5 sm:hover:border-slate-300 sm:hover:shadow-lg";
             const cardContent = (
               <div className="flex h-full flex-col items-center gap-2 sm:min-h-48 sm:items-stretch sm:justify-between sm:gap-6">
@@ -558,7 +560,7 @@ export function PortalPage() {
               </div>
             );
 
-            return isExternal ? (
+            return system.externalUrl ? (
               <a
                 key={system.externalUrl}
                 href={system.externalUrl}
@@ -572,6 +574,8 @@ export function PortalPage() {
               <Link
                 key={system.to}
                 to={getSystemPath(system)}
+                target={system.openInNewTab ? '_blank' : undefined}
+                rel={system.openInNewTab ? 'noopener noreferrer' : undefined}
                 className={cardClassName}
               >
                 {cardContent}
