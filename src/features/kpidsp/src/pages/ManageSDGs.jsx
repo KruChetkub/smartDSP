@@ -93,7 +93,14 @@ function EditableRow({ kpi, onSave, onCancel, isSaving, isNew = false }) {
 
   const inp = 'w-full bg-white border border-sky-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-sky-400/20 focus:border-sky-400 transition-all text-slate-800 font-medium';
 
-  const isValidUrl = (url) => { try { new URL(url); return true; } catch { return false; } };
+  const isValidUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
 
   return (
     <tr className={`ring-2 ring-inset ${isNew ? 'bg-emerald-50/60 ring-emerald-200' : 'bg-sky-50/60 ring-sky-200'}`}>

@@ -81,7 +81,12 @@ export default function DataEntry() {
   const labelClass = 'block text-sm font-bold text-slate-700 mb-1.5';
 
   const isValidUrl = (url) => {
-    try { new URL(url); return true; } catch { return false; }
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
   };
 
   return (

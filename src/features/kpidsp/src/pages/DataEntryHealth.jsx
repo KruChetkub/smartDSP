@@ -307,20 +307,28 @@ export default function DataEntryHealth() {
               />
             </div>
             {formData.referenceUrl && (() => {
-              try { new URL(formData.referenceUrl); return (
-                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
-                  <CheckCircle2 size={13} />
-                  <span>URL ถูกต้อง —</span>
-                  <a href={formData.referenceUrl} target="_blank" rel="noopener noreferrer"
-                    className="underline underline-offset-2 flex items-center gap-1 hover:text-emerald-900 transition-colors">
-                    คลิกทดสอบลิ้ง <ExternalLink size={11} />
-                  </a>
-                </div>
-              );} catch { return (
-                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600">
-                  <XCircle size={13} /> URL ไม่ถูกต้อง — กรุณาเริ่มด้วย https://
-                </div>
-              );}
+              try {
+                const parsedUrl = new URL(formData.referenceUrl);
+                if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                  throw new Error('Invalid protocol');
+                }
+                return (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 size={13} />
+                    <span>URL ถูกต้อง —</span>
+                    <a href={parsedUrl.href} target="_blank" rel="noopener noreferrer"
+                      className="underline underline-offset-2 flex items-center gap-1 hover:text-emerald-900 transition-colors">
+                      คลิกทดสอบลิ้ง <ExternalLink size={11} />
+                    </a>
+                  </div>
+                );
+              } catch {
+                return (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600">
+                    <XCircle size={13} /> URL ไม่ถูกต้อง — กรุณาเริ่มด้วย https://
+                  </div>
+                );
+              }
             })()}
           </div>
 
