@@ -277,7 +277,9 @@ export default function ManageHealth() {
 
   /* ── Toast ── */
   const addToast = (msg, type = 'success') => {
-    const id = Date.now() + Math.random();
+    const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `toast-${Date.now()}-${performance.now()}`;
     setToasts(prev => [...prev, { id, message: msg, type, countdown: 5 }]);
     if (type !== 'delete') setTimeout(() => removeToast(id), 3000);
     return id;

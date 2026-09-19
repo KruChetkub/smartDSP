@@ -5,6 +5,7 @@ import { env } from '../lib/env';
 import { recordAuditLog } from '../services/audit.service';
 import type { Profile } from '../types/database.types';
 import { isPasswordPolicySatisfied } from '../features/auth/passwordPolicy';
+import { checkPasswordResetEligibility, recordPasswordResetAttempt } from '../services/passwordResetAudit.service';
 
 type AuthState = {
   session: Session | null;
@@ -389,17 +390,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   requestPasswordReset: async (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
     set({ loading: true, error: null });
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const eligibility = checkPasswordResetEligibility(normalizedEmail);
+    if (!eligibility.allowed) {
+      await recordPasswordResetAttempt(normalizedEmail, eligibility.status, eligibility.reason);
+      const errorMsg = eligibility.reason || 'คุณส่งคำขอเกินจำนวนที่กำหนดสำหรับวันนี้';
+      set({ error: errorMsg, loading: false });
+      throw new Error(errorMsg);
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: `${window.location.origin}/set-new-password`,
     });
 
     if (error) {
+      await recordPasswordResetAttempt(normalizedEmail, 'blocked', error.message);
       set({ error: error.message, loading: false });
       throw error;
     }
 
+    await recordPasswordResetAttempt(normalizedEmail, 'success');
     set({ loading: false });
   },
 

@@ -87,7 +87,7 @@ export type LoginHistory = {
 
 export type SecurityAlert = {
   id: string;
-  alert_type: 'repeated_ip_failures' | 'repeated_account_failures' | 'credential_stuffing' | 'success_after_failures';
+  alert_type: 'repeated_ip_failures' | 'repeated_account_failures' | 'credential_stuffing' | 'success_after_failures' | 'repeated_password_reset';
   severity: 'warning' | 'high' | 'critical';
   status: 'open' | 'acknowledged' | 'resolved';
   fingerprint: string;

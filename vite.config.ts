@@ -2,7 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const securityHeaders = {
+const devSecurityHeaders = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://asntgpqwccsbdzppnjxk.supabase.co; font-src 'self' data:; connect-src 'self' https://asntgpqwccsbdzppnjxk.supabase.co wss://asntgpqwccsbdzppnjxk.supabase.co ws: http:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+};
+
+const prodSecurityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://asntgpqwccsbdzppnjxk.supabase.co; font-src 'self' data:; connect-src 'self' https://asntgpqwccsbdzppnjxk.supabase.co wss://asntgpqwccsbdzppnjxk.supabase.co; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
@@ -13,10 +21,10 @@ const securityHeaders = {
 
 export default defineConfig({
   server: {
-    headers: securityHeaders,
+    headers: devSecurityHeaders,
   },
   preview: {
-    headers: securityHeaders,
+    headers: prodSecurityHeaders,
   },
   plugins: [
     react(),
@@ -74,4 +82,3 @@ export default defineConfig({
     }),
   ],
 });
-

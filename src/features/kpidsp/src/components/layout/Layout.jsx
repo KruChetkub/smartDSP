@@ -123,13 +123,7 @@ export default function Layout() {
       <div className="absolute bottom-[-10%] right-[10%] w-[30%] h-[40%] rounded-full bg-cyan-200/50 blur-[100px] pointer-events-none" />
       <div className="absolute top-[40%] left-[-10%] w-[20%] h-[30%] rounded-full bg-emerald-200/50 blur-[100px] pointer-events-none" />
 
-      {/* Mobile Overlay (ซ่อนไว้ - โครงเดิมยังอยู่เพื่อไม่กระทบการเชื่อมโยง) */}
-      {false && isOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Mobile Overlay (ซ่อนไว้) */}
 
       {/* Sidebar เดิม (ซ่อนไว้ชั่วคราวตามคำสั่ง แต่ไม่ลบโค้ด) */}
       <div className={`
@@ -165,7 +159,7 @@ export default function Layout() {
               backgroundSize: "22px 22px",
             }}
           />
-          <div className="relative h-full grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4">
+          <div className="relative h-full grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-3 sm:px-4">
           {/* ปุ่มเดิมซ่อนไว้เพื่อคงโครง */}
           <button 
             onClick={() => setIsOpen(!isOpen)} 
@@ -189,8 +183,8 @@ export default function Layout() {
             </NavLink>
           </div>
 
-          <div className="flex justify-center overflow-x-auto">
-            <div className="flex items-center gap-2 min-w-max whitespace-nowrap">
+          <div className="min-w-0 flex-1 flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-hide overscroll-x-contain py-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-max whitespace-nowrap px-1">
               {mainTopTabs.map((tab) => (
                 <NavLink
                   key={tab.path}

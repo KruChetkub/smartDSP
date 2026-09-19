@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:security-headers": "node scripts/check-security-headers.mjs",
     "test:edge:no-token": "node --env-file=.env supabase/tests/edge_function_no_token_security.mjs",
-    "test:edge:authorization": "node --env-file=.env supabase/tests/edge_function_authorization_security.mjs"
+    "test:edge:authorization": "node --env-file=.env supabase/tests/edge_function_authorization_security.mjs",
+    "sonar": "sonarqube-scanner"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

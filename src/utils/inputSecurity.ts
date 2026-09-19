@@ -33,8 +33,7 @@ export function sanitizePlainTextInput(value: string | null | undefined, options
   } = options;
 
   const text = String(value ?? '')
-    .replace(/\u0000/g, '')
-    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(new RegExp('[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]', 'g'), '')
     .replace(/\r\n?/g, '\n');
   const normalized = allowNewlines ? text : text.replace(/\n+/g, ' ');
   const result = trim ? normalized.trim() : normalized;
@@ -56,8 +55,7 @@ export function sanitizeUrlInput(value: string | null | undefined, options: { fi
   const fieldName = options.fieldName || 'URL';
   const maxLength = options.maxLength || 1000;
   const text = String(value ?? '')
-    .replace(/\u0000/g, '')
-    .replace(/[\u0001-\u001F\u007F]/g, '')
+    .replace(new RegExp('[\\x00-\\x1F\\x7F]', 'g'), '')
     .trim();
 
   if (!text) {
@@ -97,8 +95,7 @@ export function sanitizeImageUrlInput(value: string | null | undefined, options:
   const fieldName = options.fieldName || 'URL รูปภาพ';
   const maxLength = options.maxLength || 2048;
   const text = String(value ?? '')
-    .replace(/\u0000/g, '')
-    .replace(/[\u0001-\u001F\u007F]/g, '')
+    .replace(new RegExp('[\\x00-\\x1F\\x7F]', 'g'), '')
     .trim();
 
   if (!text) {

@@ -14,7 +14,9 @@ type ChatMessage = {
 };
 
 function createMessageId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `msg-${Date.now()}-${performance.now()}`;
 }
 
 const greeting = 'สวัสดีค่ะ ฉันคือ DSP Assistant สามารถตอบคำถามจากฐานความรู้ของระบบเท่านั้น';

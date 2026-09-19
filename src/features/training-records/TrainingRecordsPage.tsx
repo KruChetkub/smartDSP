@@ -188,7 +188,7 @@ function normalizeDateToISO(value: string, rowNumber: number) {
   const firstPartIsYear = cleaned.split('-')[0].length === 4;
   const rawYear = firstPartIsYear ? parts[0] : parts[2];
   const year = rawYear > 2400 ? rawYear - 543 : rawYear;
-  const month = firstPartIsYear ? parts[1] : parts[1];
+  const month = parts[1];
   const day = firstPartIsYear ? parts[2] : parts[0];
   const date = new Date(Date.UTC(year, month - 1, day));
 

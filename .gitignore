@@ -20,6 +20,8 @@ graphify-out/
 scratch/
 Mmd/
 reportsmartdsp/
+sonar-project.properties
+.scannerwork/
 .vercel
 .env*.local
 README.md

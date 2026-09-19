@@ -424,11 +424,7 @@ export default function DashboardOverview() {
   const heroGradient =
     redesignEnabled
       ? "from-[#031434] via-[#0b2a5a] to-[#123b78]"
-      : passedPct >= 75
-        ? "from-emerald-100 via-cyan-100 to-blue-200"
-        : passedPct >= 50
-          ? "from-emerald-100 via-cyan-100 to-blue-200"
-          : "from-emerald-100 via-cyan-100 to-blue-200";
+      : "from-emerald-100 via-cyan-100 to-blue-200";
 
   if (isLoading) {
     return (

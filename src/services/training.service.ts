@@ -28,8 +28,7 @@ export type CreateTrainingRecordInput = TrainingFormValues & {
   actorId: string;
 };
 
-export type UpdateTrainingRecordInput = TrainingFormValues & {
-};
+export type UpdateTrainingRecordInput = TrainingFormValues;
 
 export type TrainingImportInputRow = {
   recordId?: string;

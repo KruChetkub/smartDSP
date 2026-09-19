@@ -15,13 +15,16 @@ import {
   ShieldAlert,
   Ban,
   TimerReset,
+  MailWarning,
 } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { BackupRestorePanel } from './BackupRestorePanel';
 import { ForceChangePasswordPanel } from './ForceChangePasswordPanel';
 import { MfaEnforcementPanel } from './MfaEnforcementPanel';
 import { LoginIpBlockPanel } from './LoginIpBlockPanel';
+import { PasswordResetLogsPanel } from './PasswordResetLogsPanel';
 import { SiteManagerSecuritySettings } from '../site-manager/components/SiteManagerSecuritySettings';
+import { saveLoginIpRule } from '../../services/loginIpBlock.service';
 import {
   acknowledgeSecurityAlert,
   exportAuditLogsToGoogleSheet,
@@ -35,7 +38,7 @@ import { roleLabels } from '../../types/roles';
 import { getSafeUserErrorMessage } from '../../utils/errorHandling';
 
 const loginHistoryPageSize = 10;
-type SecurityTab = 'history' | 'ip-blocks' | 'backup' | 'force-password' | 'mfa' | 'login-settings';
+type SecurityTab = 'history' | 'ip-blocks' | 'backup' | 'force-password' | 'mfa' | 'login-settings' | 'password-resets';
 
 const securityAlertLabels: Record<SecurityAlert['alert_type'], { title: string; description: string }> = {
   repeated_ip_failures: {
@@ -53,6 +56,10 @@ const securityAlertLabels: Record<SecurityAlert['alert_type'], { title: string; 
   success_after_failures: {
     title: 'เข้าสู่ระบบสำเร็จหลังล้มเหลวหลายครั้ง',
     description: 'บัญชีเข้าสู่ระบบสำเร็จหลังมีความพยายามล้มเหลวอย่างน้อย 5 ครั้งภายใน 30 นาที',
+  },
+  repeated_password_reset: {
+    title: 'พบการขอ Reset Password ซ้ำผิดปกติ',
+    description: 'มีการส่งคำขอ Reset Password ไปยังอีเมลเดียวกันซ้ำเกิน 3 ครั้งในรอบ 24 ชั่วโมง',
   },
 };
 
@@ -83,6 +90,10 @@ export function SecurityPage() {
   const [exportingLogs, setExportingLogs] = useState(false);
   const [exportResult, setExportResult] = useState<AuditLogGoogleSheetExportResult | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [alertBlockingIp, setAlertBlockingIp] = useState<string | null>(null);
+  const [alertBlockReason, setAlertBlockReason] = useState('');
+  const [alertBlocking, setAlertBlocking] = useState(false);
+  const [alertActionMessage, setAlertActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -173,6 +184,26 @@ export function SecurityPage() {
     }
   };
 
+  const handleBlockIpFromAlert = async () => {
+    if (!alertBlockingIp) return;
+    setAlertBlocking(true);
+    setAlertActionMessage(null);
+    setAlertsError(null);
+    try {
+      await saveLoginIpRule({
+        ipAddress: alertBlockingIp,
+        ruleType: 'block',
+        reason: alertBlockReason || 'บล็อก IP จาก Security Alert',
+      });
+      setAlertActionMessage(`เพิ่ม IP ${alertBlockingIp} เข้าสู่รายการบล็อกเรียบร้อยแล้ว`);
+      setAlertBlockingIp(null);
+    } catch (err) {
+      setAlertsError(getSafeUserErrorMessage(err, 'ไม่สามารถบล็อก IP ได้'));
+    } finally {
+      setAlertBlocking(false);
+    }
+  };
+
   const handleAcknowledgeAlert = async (alertId: string) => {
     setAcknowledgingAlertId(alertId);
     setAlertsError(null);
@@ -201,6 +232,7 @@ export function SecurityPage() {
           { value: 'force-password', label: 'Force Change Password', icon: KeyRound },
           { value: 'mfa', label: 'MFA Enforcement', icon: Smartphone },
           { value: 'login-settings', label: 'ตั้งค่าการลงชื่อเข้าใช้', icon: TimerReset },
+          { value: 'password-resets', label: 'รายการขอ Reset Password', icon: MailWarning },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
@@ -268,14 +300,29 @@ export function SecurityPage() {
                         </div>
                         <p className="mt-1 text-xs text-slate-600">{label.description}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => void handleAcknowledgeAlert(alert.id)}
-                        disabled={acknowledgingAlertId === alert.id}
-                        className="shrink-0 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        {acknowledgingAlertId === alert.id ? 'กำลังบันทึก' : 'รับทราบ'}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {alert.source_ip && alert.source_ip !== '127.0.0.1' && alert.source_ip !== 'localhost' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAlertBlockingIp(alert.source_ip);
+                              setAlertBlockReason(`บล็อก IP จากการแจ้งเตือน: ${label.title}`);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                          >
+                            <Ban className="h-3 w-3" />
+                            บล็อก IP
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => void handleAcknowledgeAlert(alert.id)}
+                          disabled={acknowledgingAlertId === alert.id}
+                          className="shrink-0 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {acknowledgingAlertId === alert.id ? 'กำลังบันทึก' : 'รับทราบ'}
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                       <span>จำนวน {alert.attempt_count.toLocaleString('th-TH')} ครั้ง</span>
@@ -502,9 +549,62 @@ export function SecurityPage() {
         <ForceChangePasswordPanel />
       ) : activeTab === 'mfa' ? (
         <MfaEnforcementPanel />
+      ) : activeTab === 'password-resets' ? (
+        <PasswordResetLogsPanel />
       ) : (
         <SiteManagerSecuritySettings />
       )}
+
+      {/* Block IP Modal from Alert Card */}
+      {alertBlockingIp ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-rose-100 p-2.5 text-rose-700">
+                <Ban className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">ยืนยันการบล็อก IP Address</h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">{alertBlockingIp}</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs text-slate-600">
+              เมื่อทำการบล็อก IP นี้ ระบบจะปฏิเสธการเข้าสู่ระบบและการขอ Reset Password ทั้งหมดจากเครื่องนี้ทันที
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">ระบุเหตุผลการบล็อก</label>
+              <input
+                type="text"
+                value={alertBlockReason}
+                onChange={(e) => setAlertBlockReason(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={alertBlocking}
+                onClick={() => setAlertBlockingIp(null)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                disabled={alertBlocking}
+                onClick={() => void handleBlockIpFromAlert()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {alertBlocking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                {alertBlocking ? 'กำลังบันทึก...' : 'ยืนยันบล็อก IP'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
